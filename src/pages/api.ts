@@ -263,3 +263,75 @@ export const courseApi = {
 };
 
 export default api;
+
+// ==== ASSIGNMENT API (Lecturer create + common) ====
+export type CreateAssignmentPayload = {
+  title: string;
+  description: string;
+  courseId: string;
+  dueDate?: string; // ISO-8601 datetime
+  maxScore?: number;
+  weekNumber?: number;
+};
+
+export type Assignment = {
+  id: string;
+  title: string;
+  description: string;
+  courseId: string;
+  dueDate?: string;
+  maxScore?: number;
+  weekNumber?: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export const assignmentApi = {
+  // Lấy danh sách assignments theo courseId
+  getByCourseId: async (courseId: string) => {
+    return api.get(`/assignments/course/${courseId}`);
+  },
+
+  // Lấy assignment theo ID
+  getById: async (id: string) => {
+    return api.get(`/assignments/${id}`);
+  },
+
+  create: async (data: CreateAssignmentPayload, file?: File) => {
+    const form = new FormData();
+    form.append('title', data.title);
+    form.append('description', data.description);
+    form.append('courseId', data.courseId);
+    if (data.dueDate) form.append('dueDate', data.dueDate);
+    if (typeof data.maxScore === 'number' && data.maxScore >= 0) {
+      form.append('maxScore', String(data.maxScore));
+    }
+    if (typeof data.weekNumber === 'number' && Number.isInteger(data.weekNumber) && data.weekNumber >= 1) {
+      form.append('weekNumber', String(data.weekNumber));
+    }
+    if (file) form.append('file', file);
+    return api.post('/assignments', form);
+  },
+
+  // Cập nhật assignment (có thể đính kèm file)
+  update: async (
+    assignmentId: string,
+    data: Partial<CreateAssignmentPayload> = {},
+    file?: File
+  ) => {
+    const form = new FormData();
+    if (data.title !== undefined) form.append('title', data.title);
+    if (data.description !== undefined) form.append('description', data.description);
+    if (data.courseId !== undefined) form.append('courseId', data.courseId);
+    if (data.dueDate) form.append('dueDate', data.dueDate);
+    if (typeof data.maxScore === 'number') form.append('maxScore', String(Math.max(0, data.maxScore)));
+    if (typeof data.weekNumber === 'number') form.append('weekNumber', String(Math.max(1, data.weekNumber)));
+    if (file) form.append('file', file);
+    return api.patch(`/assignments/${assignmentId}`, form);
+  },
+
+  // Xóa assignment
+  delete: async (assignmentId: string) => {
+    return api.delete(`/assignments/${assignmentId}`);
+  },
+};
