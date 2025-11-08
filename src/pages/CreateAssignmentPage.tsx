@@ -214,6 +214,7 @@ export default function CreateAssignmentPage() {
                   </div>
                   <div className="shrink-0 flex items-center gap-2">
                     <button
+                      type='button'
                       onClick={() => {
                         setEditingId(assignment.id);
                         reset({
@@ -259,7 +260,10 @@ export default function CreateAssignmentPage() {
             {/* Tiêu đề & mô tả */}
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="md:col-span-2">
-                <label className="mb-2 block text-sm font-semibold text-main dark:text-white">
+                <label
+                  htmlFor="assignment-title" 
+                  className="mb-2 block text-sm font-semibold text-main dark:text-white"
+                >
                   Tiêu đề <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -279,10 +283,13 @@ export default function CreateAssignmentPage() {
               </div>
 
               <div className="md:col-span-2">
-                <label className="mb-2 block text-sm font-semibold text-main dark:text-white">
+                <label
+                    htmlFor="assignment-description" 
+                    className="mb-2 block text-sm font-semibold text-main dark:text-white">
                   Mô tả <span className="text-red-500">*</span>
                 </label>
                 <textarea
+                  id="assignment-description"
                   {...register('description', {
                     required: 'Mô tả là bắt buộc',
                     minLength: {
@@ -303,15 +310,26 @@ export default function CreateAssignmentPage() {
             {/* Thông số */}
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div>
-                <label className="mb-2 block text-sm font-semibold text-main dark:text-white">Hạn nộp</label>
+                <label
+                  htmlFor="assignment-due-date" 
+                  className="mb-2 block text-sm font-semibold text-main dark:text-white"
+                >
+                  Hạn nộp
+                </label>
                 <input
+                  id="assignment-due-date"
                   type="datetime-local"
                   {...register('dueDate')}
                   className="w-full rounded-lg border border-color bg-white px-4 py-2.5 text-sm text-main focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white"
                 />
               </div>
               <div>
-                <label className="mb-2 block text-sm font-semibold text-main dark:text-white">Điểm tối đa</label>
+                <label
+                  htmlFor="assignment-max-score" 
+                  className="mb-2 block text-sm font-semibold text-main dark:text-white"
+                >
+                  Điểm tối đa
+                </label>
                 <input
                   type="number"
                   min={0}
@@ -332,8 +350,14 @@ export default function CreateAssignmentPage() {
                 )}
               </div>
               <div>
-                <label className="mb-2 block text-sm font-semibold text-main dark:text-white">Tuần</label>
+                <label
+                  htmlFor="assignment-week-number" 
+                  className="mb-2 block text-sm font-semibold text-main dark:text-white"
+                >
+                  Tuần
+                </label>
                 <input
+                  id="assignment-week-number"
                   type="number"
                   min={1}
                   step={1}

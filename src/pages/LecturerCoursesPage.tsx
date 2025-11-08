@@ -665,6 +665,7 @@ export default function LecturerCoursesPage() {
                     </div>
                     <div className="flex flex-col sm:flex-row gap-2">
                       <button
+                        type="button"
                         onClick={() =>
                           navigate(`/lecturer/courses/${course.id}/edit`)
                         }
@@ -674,6 +675,7 @@ export default function LecturerCoursesPage() {
                         Chỉnh sửa
                       </button>
                       <button
+                        type="button"
                         onClick={() =>
                           navigate(
                             `/lecturer/courses/${course.id}/assignments/create`
@@ -685,6 +687,7 @@ export default function LecturerCoursesPage() {
                         Giao bài tập
                       </button>
                       <button
+                        type="button"
                         disabled
                         title="Chỉ Admin mới có quyền xóa khóa học"
                         className="flex w-full items-center justify-center gap-2 sm:w-auto rounded-xl bg-component px-4 py-2 text-sm font-semibold text-secondary opacity-60 cursor-not-allowed"
