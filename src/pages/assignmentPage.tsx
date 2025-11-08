@@ -6,6 +6,9 @@ import { FaCalendarAlt, FaArrowLeft } from 'react-icons/fa';
 import { useAssignmentsByCourse } from '../hooks/useAssignmentQuery';
 import { useCourseDetail } from '../hooks/useCourseQuery';
 import { useAssignmentStore } from '../stores/assignmentStore';
+import { IoIosWarning } from "react-icons/io";
+import { FaFire } from "react-icons/fa";
+
 
 export default function AssignmentPage() {
   const { id } = useParams<{ id: string }>();
@@ -179,27 +182,27 @@ export default function AssignmentPage() {
                           )}
 
                           {overdue && (
-                            <span
-                              className="inline-block px-3 py-1 text-xs rounded-full font-medium"
+                            <p
+                              className="px-3 py-1 text-xs rounded-full font-medium"
                               style={{
                                 backgroundColor: 'rgba(239, 68, 68, 0.1)',
                                 color: 'var(--color-danger)',
                               }}
                             >
-                              ⚠️ Quá hạn
-                            </span>
+                              <IoIosWarning className='h-6 w-6'/> Quá hạn
+                            </p>
                           )}
 
                           {isUrgent && (
-                            <span
-                              className="inline-block px-3 py-1 text-xs rounded-full font-medium"
+                            <p
+                              className="px-3 py-1 text-xs rounded-full font-medium"
                               style={{
                                 backgroundColor: 'rgba(234, 179, 8, 0.1)',
                                 color: 'var(--color-warning)',
                               }}
                             >
-                              🔥 Còn {daysUntil} ngày
-                            </span>
+                              <FaFire className='w-6 h-6'/> Còn {daysUntil} ngày
+                            </p>
                           )}
                         </div>
                       </div>

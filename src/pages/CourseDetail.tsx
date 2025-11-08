@@ -7,10 +7,18 @@ import { GrCertificate } from 'react-icons/gr';
 import { useCourseDetail, useEnrollCourse, useUnenrollCourse, useMyEnrollments } from '../hooks/useCourseQuery';
 import { useAuthStore } from '../stores/authStore';
 import { useCourseStore } from '../stores/courseStore';
-import type { Course, Schedule } from '../api/courseApi';
+import type { Schedule } from '../types';
 import toast from 'react-hot-toast';
 import UnenrollModal from '../components/UnenrollModal';
 import { IoArrowForwardOutline } from "react-icons/io5";
+import { AxiosError } from 'axios';
+
+interface UnenrollInfo {
+  enrollmentId: string;
+  scheduleId: string;
+  courseName: string;
+  scheduleInfo: string;
+}
 
 export default function CourseDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -18,7 +26,8 @@ export default function CourseDetailPage() {
   const user = useAuthStore((s) => s.user);
   const isStudent = user?.role === 'student';
 
-  const allEnrollments = useCourseStore((s) => s.enrollments);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const allEnrollments = useCourseStore((s) => s.enrollments) || [];
 
   const { data: course, isLoading, error } = useCourseDetail(id);
   const enrollMutation = useEnrollCourse();
@@ -30,12 +39,7 @@ export default function CourseDetailPage() {
   const [unenrolledEnrollments, setUnenrolledEnrollments] = useState<Set<string>>(new Set());
 
   const [showUnenrollModal, setShowUnenrollModal] = useState(false);
-  const [selectedEnrollmentForUnenroll, setSelectedEnrollmentForUnenroll] = useState<{
-    enrollmentId: string;
-    scheduleId: string;
-    courseName: string;
-    scheduleInfo: string;
-  } | null>(null);
+  const [selectedEnrollmentForUnenroll, setSelectedEnrollmentForUnenroll] = useState<UnenrollInfo | null>(null);
 
   const existingEnrollmentScheduleIds = useMemo(() => {
     if (!allEnrollments || allEnrollments.length === 0) {
@@ -76,7 +80,8 @@ export default function CourseDetailPage() {
         return prev;
       });
       toast.success('Đăng ký khóa học thành công! 🎉');
-    } catch (error: any) {
+    } catch (err) {
+      const error = err as AxiosError<{ message?: string }>;
       toast.error(error?.response?.data?.message || 'Đăng ký thất bại');
     }
   };
@@ -114,7 +119,8 @@ export default function CourseDetailPage() {
       toast.success('Hủy đăng ký khóa học thành công!');
       setShowUnenrollModal(false);
       setSelectedEnrollmentForUnenroll(null);
-    } catch (error: any) {
+    } catch (err) {
+      const error = err as AxiosError<{ message?: string }>;
       toast.error(error?.response?.data?.message || 'Hủy đăng ký thất bại');
     }
   };
@@ -129,13 +135,13 @@ export default function CourseDetailPage() {
   }
 
   if (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Không thể tải chi tiết khóa học';
+    
     return (
       <div className="bg-surface border border-color rounded-xl p-8 text-center">
         <BiErrorCircle className="inline-block text-5xl mb-4" style={{ color: 'var(--color-danger)' }} />
         <h3 className="text-lg font-semibold mb-2 text-main">Failed to load course</h3>
-        <p className="text-secondary mb-4">
-          {(error as unknown as { message?: string })?.message || 'Không thể tải chi tiết khóa học'}
-        </p>
+        <p className="text-secondary mb-4">{errorMessage}</p>
         <button
           onClick={() => navigate(-1)}
           className="px-6 py-2.5 rounded-lg transition-colors font-medium text-white"
@@ -155,43 +161,41 @@ export default function CourseDetailPage() {
     );
   }
 
-  const c = course as Course;
-
   return (
     <div className="space-y-6 p-6 w-full max-w-full overflow-x-hidden">
       {/* Course Header */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Thumbnail */}
-          <img
-            loading="lazy"
-            src={c.thumbnailUrl || `https://picsum.photos/seed/${c.courseCode}/640/360`}
-            alt={c.courseName}
-            className="w-full h-full object-cover rounded-lg shadow-md"
-          />
+        <img
+          loading="lazy"
+          src={course.thumbnailUrl || `https://picsum.photos/seed/${course.courseCode}/640/360`}
+          alt={course.courseName}
+          className="w-full h-full object-cover rounded-lg shadow-md"
+        />
 
         {/* Course Info */}
         <div className="flex flex-col gap-4">
           <article>
-            <h1 className="text-2xl font-bold text-main">{c.courseName}</h1>
+            <h1 className="text-2xl font-bold text-main">{course.courseName}</h1>
             <p className="text-sm text-secondary">
-              Mã: <span className="font-medium">{c.courseCode}</span>
+              Mã: <span className="font-medium">{course.courseCode}</span>
             </p>
           </article>
 
-          {c.lecturer && (
+          {course.lecturer && (
             <article>
               <h4 className="text-sm font-semibold text-main">Giảng viên</h4>
               <p className="text-sm text-secondary">
-                {c.lecturer.user?.fullName} – {c.lecturer.title}
+                {course.lecturer.user?.fullName} – {course.lecturer.title}
               </p>
-              {c.lecturer.department && <p className="text-xs text-secondary">{c.lecturer.department}</p>}
+              {course.lecturer.department && <p className="text-xs text-secondary">{course.lecturer.department}</p>}
             </article>
           )}
 
           <section className="bg-background p-5 rounded-lg flex-1 shadow-md hover:shadow-lg">
             <h3 className="font-semibold text-main">Mô tả</h3>
             <p className="text-sm text-secondary whitespace-pre-line">
-              {c.description || 'No description provided.'}
+              {course.description || 'No description provided.'}
             </p>
           </section>
         </div>
@@ -207,17 +211,17 @@ export default function CourseDetailPage() {
             </div>
             <article>
               <h4 className="text-secondary">Credit</h4>
-              <p className="font-medium text-main">{c.credits}</p>
+              <p className="font-medium text-main">{course.credits}</p>
             </article>
           </div>
           <div className='bg-primary text-primary h-full flex items-center justify-center px-4 scale-x-0 origin-right group-hover:scale-x-100 transition-transform'>
-            <IoArrowForwardOutline  className='w-5 h-5'/>
+            <IoArrowForwardOutline className='w-5 h-5'/>
           </div>
         </div>
 
         {/* Assignments */}
         <div 
-          onClick={() => navigate(`/student/courses/${c.id}/assignments`)}
+          onClick={() => navigate(`/student/courses/${course.id}/assignments`)}
           className="bg-background rounded-lg overflow-hidden shadow-md hover:shadow-lg flex items-center justify-between cursor-pointer transition-all group"
         >
           <div className='p-4 flex items-center'>
@@ -226,15 +230,15 @@ export default function CourseDetailPage() {
             </div>
             <article className="flex-1">
               <h4 className="text-secondary">Assignment</h4>
-              <p className="font-medium text-main">{c._count.assignments ?? 0}</p>
+              <p className="font-medium text-main">{course._count.assignments ?? 0}</p>
             </article>
           </div>
           <div className='bg-primary text-primary h-full flex items-center justify-center px-4 scale-x-0 origin-right group-hover:scale-x-100 transition-transform'>
-            <IoArrowForwardOutline  className='w-5 h-5'/>
+            <IoArrowForwardOutline className='w-5 h-5'/>
           </div>
         </div>
 
-        {/*Lessions */}  
+        {/* Lessons */}  
         <div className="bg-background rounded-lg overflow-hidden shadow-md hover:shadow-lg flex items-center justify-between cursor-pointer transition-all group">
           <div className='p-4 flex items-center'>
             <div className="p-2 bg-primary text-primary rounded-lg mr-3 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -242,11 +246,11 @@ export default function CourseDetailPage() {
             </div>
             <article>
               <h4 className="text-secondary">Lectures</h4>
-              <p className="font-medium text-main">{c._count.lectureMaterials ?? 0}</p>
+              <p className="font-medium text-main">{course._count.lectureMaterials ?? 0}</p>
             </article>
           </div>
           <div className='bg-primary text-primary h-full flex items-center justify-center px-4 scale-x-0 origin-right group-hover:scale-x-100 transition-transform'>
-            <IoArrowForwardOutline  className='w-5 h-5'/>
+            <IoArrowForwardOutline className='w-5 h-5'/>
           </div>
         </div>
       </section>
@@ -257,7 +261,7 @@ export default function CourseDetailPage() {
 
         <section className="bg-background shadow-md w-full overflow-hidden rounded-lg">
           {(() => {
-            const schedules = (c as Course & { schedules?: Schedule[] }).schedules ?? [];
+            const schedules = course.schedules ?? [];
             if (schedules.length === 0)
               return (
                 <p className="text-secondary p-4">Chưa có lịch học cho khóa học này.</p>
@@ -289,8 +293,8 @@ export default function CourseDetailPage() {
                   <tbody>
                     {schedules.map((s) => {
                       const isFull =
-                        s._count?.enrollments && c.maxStudents
-                          ? s._count.enrollments >= c.maxStudents
+                        s._count?.enrollments && course.maxStudents
+                          ? s._count.enrollments >= course.maxStudents
                           : false;
                       
                       const isLocallyEnrolled = enrolledSchedules.has(s.id);
@@ -328,12 +332,12 @@ export default function CourseDetailPage() {
                             {s.totalWeeks ?? '-'}
                           </td>
                           <td className="px-3 py-4 text-center whitespace-nowrap text-main">
-                            {s._count?.enrollments ?? 0}/{c.maxStudents}
+                            {s._count?.enrollments ?? 0}/{course.maxStudents}
                           </td>
                           <td className="px-3 py-4 text-center whitespace-nowrap">
                             {isEnrolled ? (
                               <button
-                                onClick={() => handleUnenrollClick(s, c.courseName)}
+                                onClick={() => handleUnenrollClick(s, course.courseName)}
                                 disabled={unenrollMutation.isPending}
                                 className="text-white w-full py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                                 style={{ backgroundColor: 'var(--color-danger)' }}

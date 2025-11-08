@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../config/queryClient';
 import { useAuthStore } from '../stores/authStore';
+import { type StudentRegisterData, type LecturerRegisterData } from '../api/api';
+
 import {
   loginService,
   logoutService,
@@ -76,7 +78,7 @@ export const useRegister = () => {
       data,
     }: {
       role: 'student' | 'lecturer';
-      data: any;
+      data: StudentRegisterData | LecturerRegisterData;
     }) => registerService(role, data),
     onSuccess: (user) => {
       setUser(user);

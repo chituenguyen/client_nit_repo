@@ -7,9 +7,7 @@ import { useAuthStore } from './stores/authStore'
 import { queryClient } from './config/queryClient'
 import { AiOutlineLoading3Quarters } from 'react-icons/ai';
 
-
-// Component wrapper để gọi checkAuth khi app load
-function AppWrapper() {
+export function AppWrapper() {
   const checkAuth = useAuthStore(state => state.checkAuth);
   const [authChecked, setAuthChecked] = useState(false);
 

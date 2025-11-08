@@ -6,13 +6,11 @@ import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 import { BiErrorCircle } from "react-icons/bi";
 import { useMyEnrollments } from "../hooks/useCourseQuery";
-import type { Enrollment } from "../api/courseApi";
+import type { Enrollment, CalendarView } from "../types";
 
 dayjs.extend(isoWeek);
 dayjs.extend(isSameOrBefore);
 dayjs.extend(isSameOrAfter);
-
-type CalendarView = "Day" | "Week" | "Month";
 
 export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(dayjs());
@@ -159,6 +157,7 @@ const CalendarGrid: React.FC<CalendarDateProps> = ({ currentDate, view }) => {
 
   const hours = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, "0")}:00`);
   
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const dayMap: { [key: string]: number } = {
     MONDAY: 1,
     TUESDAY: 2,
@@ -210,6 +209,7 @@ const CalendarGrid: React.FC<CalendarDateProps> = ({ currentDate, view }) => {
         }
         
         return acc;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       }, [] as any[]);
     }
 
@@ -254,7 +254,7 @@ const CalendarGrid: React.FC<CalendarDateProps> = ({ currentDate, view }) => {
         };
       });
 
-  }, [enrollments, currentDate, view]); 
+  }, [enrollments, currentDate, view, dayMap]); 
 
   const currentMinutes = now.hour() * 60 + now.minute();
   const isVisibleWeek = view === 'Week' && now.isAfter(currentDate.startOf('isoWeek')) && now.isBefore(currentDate.startOf('isoWeek').add(7, 'day'));
@@ -300,7 +300,6 @@ const CalendarGrid: React.FC<CalendarDateProps> = ({ currentDate, view }) => {
               }`}
               style={{ flexBasis: view === 'Week' ? `${100/7}%` : '100%' }}
             >
-              {/* Header với highlight cho ngày hôm nay */}
               <div 
                 className={`border-b text-center py-2 sticky top-0 z-10 transition-all ${
                   isToday 
@@ -317,7 +316,6 @@ const CalendarGrid: React.FC<CalendarDateProps> = ({ currentDate, view }) => {
                 </div>
               </div>
 
-              {/* Grid cells */}
               {hours.map((_, i) => (
                 <div 
                   key={i} 
@@ -325,7 +323,6 @@ const CalendarGrid: React.FC<CalendarDateProps> = ({ currentDate, view }) => {
                 />
               ))}
 
-              {/* Tasks/Events */}
               {tasks
                 .filter((task) => dayjs(task.startTime).isSame(day, "day"))
                 .map((task) => {
@@ -364,7 +361,6 @@ const CalendarGrid: React.FC<CalendarDateProps> = ({ currentDate, view }) => {
           );
         })}
 
-        {/* Current time indicator */}
         {(isVisibleWeek || isVisibleDay) && (() => {
           const currentDayIndex = view === 'Week' ? now.isoWeekday() - 1 : 0;
           const columnCount = daysToDisplay.length;

@@ -3,11 +3,8 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useLogin } from '../hooks/useAuthQuery';
 import { toast } from 'react-hot-toast';
 import { useEffect } from 'react';
-
-type LoginFormData = {
-  email: string;
-  password: string;
-};
+import type { LoginFormData, LocationState } from '../types';
+import { AxiosError } from 'axios';
 
 export default function LoginPage() {
   const {
@@ -20,62 +17,39 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const from = (location.state as any)?.from?.pathname || '/';
+  const locationState = location.state as LocationState | null;
+  const from = locationState?.from?.pathname || '/';
 
-  // 🔍 DEBUG: Kiểm tra token khi component mount
   useEffect(() => {
     const token = localStorage.getItem('token');
-    const user = localStorage.getItem('user');
     
-    console.log('🔍 LOGIN PAGE - Initial check:');
-    console.log('Token:', token ? `${token.substring(0, 20)}...` : 'NULL');
-    console.log('User:', user);
-    
-    // Nếu đã có token, redirect về trang chủ
     if (token) {
-      console.log('✅ Already logged in, redirecting to:', from);
       navigate(from, { replace: true });
     }
-  }, []);
+  }, [from, navigate]);
 
   const onSubmit = async (data: LoginFormData) => {
-    console.log('📝 Submitting login form:', { email: data.email });
-    
     try {
-      const user = await loginMutation.mutateAsync({
+      await loginMutation.mutateAsync({
         email: data.email,
         password: data.password,
       });
 
-      console.log('✅ Login successful!');
-      console.log('User:', user);
-      
-      // 🔍 DEBUG: Kiểm tra token sau khi login
       const savedToken = localStorage.getItem('token');
-      const savedUser = localStorage.getItem('user');
-      
-      console.log('💾 Saved to localStorage:');
-      console.log('Token:', savedToken ? `${savedToken.substring(0, 20)}...` : 'NULL');
-      console.log('User:', savedUser);
 
       if (!savedToken) {
-        console.error('❌ ERROR: Token not saved to localStorage!');
         toast.error('Lỗi lưu token, vui lòng thử lại');
         return;
       }
 
       toast.success('Đăng nhập thành công!');
       
-      // Delay nhỏ để đảm bảo token đã được lưu
       setTimeout(() => {
-        console.log('🔄 Redirecting to:', from);
         navigate(from, { replace: true });
       }, 100);
 
-    } catch (error: any) {
-      console.error('❌ Login error:', error);
-      console.error('Response:', error?.response?.data);
-      
+    } catch (err) {
+      const error = err as AxiosError<{ message?: string }>;
       const errorMessage =
         error?.response?.data?.message || 'Đăng nhập thất bại';
       toast.error(errorMessage);
@@ -122,8 +96,9 @@ export default function LoginPage() {
           {loginMutation.isError && (
             <div className="mb-4 p-3 bg-red-50 border-2 border-red-200 rounded-lg text-red-700 text-sm font-medium">
               ⚠️{' '}
-              {(loginMutation.error as any)?.response?.data?.message ||
-                'Có lỗi xảy ra!'}
+              {loginMutation.error instanceof AxiosError
+                ? loginMutation.error.response?.data?.message || 'Có lỗi xảy ra!'
+                : 'Có lỗi xảy ra!'}
             </div>
           )}
 
@@ -148,7 +123,7 @@ export default function LoginPage() {
                 })}
                 className="w-full px-4 py-2.5 bg-background border border-color rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-main placeholder:text-secondary transition-all"
                 placeholder="example@gmail.com"
-                disabled={loginMutation.isLoading || isSubmitting}
+                disabled={loginMutation.isPending || isSubmitting}
               />
               {errors.email && (
                 <p className="text-red-500 text-xs mt-1">
@@ -177,7 +152,7 @@ export default function LoginPage() {
                 })}
                 className="w-full px-4 py-2.5 bg-background border border-color rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-main placeholder:text-secondary transition-all"
                 placeholder="••••••••"
-                disabled={loginMutation.isLoading || isSubmitting}
+                disabled={loginMutation.isPending || isSubmitting}
               />
               {errors.password && (
                 <p className="text-red-500 text-xs mt-1">
@@ -189,11 +164,11 @@ export default function LoginPage() {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={loginMutation.isLoading || isSubmitting}
+              disabled={loginMutation.isPending || isSubmitting}
               className="w-full bg-primary text-primary font-semibold py-3 px-4 rounded-lg hover:shadow-2xl hover:shadow-primary/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg mt-6 relative overflow-hidden group"
             >
               <span className="relative z-10">
-                {loginMutation.isLoading || isSubmitting
+                {loginMutation.isPending || isSubmitting
                   ? 'Đang đăng nhập...'
                   : 'Đăng nhập'}
               </span>

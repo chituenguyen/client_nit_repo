@@ -12,6 +12,12 @@ import { useMyEnrollments } from '../hooks/useCourseQuery';
 import { useCourseStore } from '../stores/courseStore';
 import { useAuthStore } from '../stores/authStore';
 import { courseApi, type Course } from '../api/courseApi';
+import { AxiosError } from 'axios';
+
+interface FetchCoursesResult {
+  courses: Course[];
+  nextPage?: number;
+}
 
 export default function CurrentCourse() {
   return (
@@ -97,7 +103,7 @@ function EnrolledCourses() {
   const [showAll, setShowAll] = useState(false);
 
   const { isLoading, error, refetch } = useMyEnrollments('ENROLLED');
-  const enrollments = useCourseStore((s) => s.enrollments);
+  const enrollments = useCourseStore((s) => s.enrollments) || [];
 
   if (isLoading) {
     return (
@@ -112,12 +118,14 @@ function EnrolledCourses() {
   }
 
   if (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to load enrolled courses';
+    
     return (
       <div>
         <h2 className="text-2xl font-bold mb-2.5 text-main">Recent Enrolled Courses</h2>
         <div className="bg-surface border border-color rounded-lg p-6 text-center">
           <BiErrorCircle className="inline-block text-4xl mb-2" style={{ color: 'var(--color-danger)' }} />
-          <p className="text-secondary mb-3">{typeof error === 'string' ? error : 'Failed to load enrolled courses'}</p>
+          <p className="text-secondary mb-3">{errorMessage}</p>
           <button
             onClick={() => refetch()}
             className="px-4 py-2 rounded-lg transition-colors text-sm text-white font-medium"
@@ -228,7 +236,7 @@ function AllCourses() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const fetchCourses = async ({ pageParam = 1 }) => {
+  const fetchCourses = async ({ pageParam = 1 }): Promise<FetchCoursesResult> => {
     const response = await courseApi.getCourses({
       search: debouncedSearch,
       page: pageParam,
@@ -240,7 +248,7 @@ function AllCourses() {
     if (response.data?.data) {
       if (Array.isArray(response.data.data)) {
         courses = response.data.data;
-      } else if (response.data.data.items && Array.isArray(response.data.data.items)) {
+      } else if ('items' in response.data.data && Array.isArray(response.data.data.items)) {
         courses = response.data.data.items;
       }
     } else if (Array.isArray(response.data)) {
@@ -377,7 +385,11 @@ function AllCourses() {
             Failed to load courses
           </h3>
           <p className="text-secondary mb-4">
-            {error instanceof Error ? error.message : 'An error occurred'}
+            {error instanceof AxiosError 
+              ? (error.response?.data?.message || error.message) 
+              : error instanceof Error 
+              ? error.message 
+              : 'An error occurred'}
           </p>
           <button
             onClick={() => refetch()}
@@ -429,7 +441,7 @@ function AllCourses() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {allCourses.map((course) => {
               const totalEnrolled = course.schedules?.reduce(
-                (sum: number, schedule: any) => sum + (schedule._count?.enrollments ?? 0), 
+                (sum, schedule) => sum + (schedule._count?.enrollments ?? 0), 
                 0
               ) ?? 0;
               
