@@ -14,6 +14,8 @@ import CalendarPage from '../pages/calendarPage';
 import AssignmentPage from '../pages/assignmentPage';
 import BlogPage from '../pages/blogPage';
 import LecturerApp from '../LecturerApp';
+import LecturerCoursesPage from '../pages/LecturerCoursesPage';
+import CreateCoursePage from '../pages/CreateCoursePage';
 
 
 const router = createBrowserRouter([
@@ -68,7 +70,9 @@ const router = createBrowserRouter([
     ),
     children: [
       { path: '', element: <div>Lecturer Dashboard (Coming soon)</div> },
-      { path: 'courses', element: <div>Quản lý khóa học</div> },
+      { path: 'courses', element: <LecturerCoursesPage /> },
+      { path: 'courses/create', element: <CreateCoursePage /> },
+      { path: 'courses/:courseId/edit', element: <CreateCoursePage /> },
       { path: 'students', element: <div>Quản lý học viên</div> },
       { path: 'analytics', element: <div>Thống kê</div> },
     ],

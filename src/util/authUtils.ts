@@ -16,6 +16,8 @@ export interface User {
     phone?: string;
     createdAt: string;
     updatedAt?: string;
+    lecturerId?: string; // ID từ bảng LECTURER (khác với userId)
+    studentId?: string;  // ID từ bảng STUDENT (khác với userId)
 }
 
 // Hàm tiện ích để chuẩn hóa role từ API
