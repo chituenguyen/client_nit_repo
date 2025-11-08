@@ -1,7 +1,7 @@
 // Định nghĩa hằng số cho Role
 export const UserRole = {
-  STUDENT: 1,
-  LECTURER: 2
+  STUDENT: 'student',
+  LECTURER: 'lecturer'
 } as const;
 
 export type UserRole = typeof UserRole[keyof typeof UserRole];

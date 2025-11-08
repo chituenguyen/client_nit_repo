@@ -10,6 +10,7 @@ import RoleRedirect from '../components/RoleRedirect';
 
 // Import các pages
 import CoursePage from '../pages/coursePage';
+import CourseDetail from '../pages/CourseDetail';
 import CalendarPage from '../pages/calendarPage';
 import AssignmentPage from '../pages/assignmentPage';
 import BlogPage from '../pages/blogPage';
@@ -20,7 +21,6 @@ import CreateAssignmentPage from '../pages/CreateAssignmentPage';
 
 
 const router = createBrowserRouter([
-  // Public routes (không cần đăng nhập)
   {
     path: '/login',
     element: <LoginPage />,
@@ -30,7 +30,6 @@ const router = createBrowserRouter([
     element: <RegisterPage />,
   },
 
-    // Root redirect dựa vào role
   {
     path: '/',
     element: (
@@ -40,7 +39,7 @@ const router = createBrowserRouter([
     ),
   },
 
-    // Student routes
+  // Student routes
   {
     path: '/student',
     element: (
@@ -53,15 +52,17 @@ const router = createBrowserRouter([
     children: [
       { path: '', element: <Navigate to="/student/courses" replace /> },
       { path: 'courses', element: <CoursePage /> },
+      { path: 'courses/:id', element: <CourseDetail /> },
+      // ✅ Route mới cho assignments của course cụ thể
+      { path: 'courses/:id/assignments', element: <AssignmentPage /> },
       { path: 'calendar', element: <CalendarPage /> },
-      { path: 'assignment', element: <AssignmentPage /> },
       { path: 'blog', element: <BlogPage /> },
     ],
   },
 
-  // Lecturer routes (đổi từ /mentor)
+  // Lecturer routes
   {
-    path: '/lecturer',  // Đổi từ /mentor
+    path: '/lecturer',
     element: (
       <ProtectedRoute>
         <RoleBasedRoute allowedRoles={[UserRole.LECTURER]}>
@@ -86,7 +87,5 @@ const router = createBrowserRouter([
     element: <NotFound />,
   }
 ]);
-
-
 
 export default router;

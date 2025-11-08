@@ -1,9 +1,8 @@
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { useAuthStore } from './stores/authStore';
-import { UserRole } from './util/authUtils';
 import { useNavigate } from 'react-router-dom';
-import { useLogout } from './hooks/useAuthQuery';
+import { useLogout } from "./hooks/useAuthQuery";
+import { useAuthStore } from './stores/authStore';
 
 interface HeaderProps {
   currentPage: string;
@@ -11,30 +10,28 @@ interface HeaderProps {
 }
 
 export default function Header({ currentPage, onMenuClick }: HeaderProps) {
-  const user = useAuthStore(state => state.user);
-  const isLecturer = user?.role === UserRole.LECTURER;
-
   const navigate = useNavigate();
+  const user = useAuthStore(state => state.user);
   const logoutMutation = useLogout();
   const [showUserMenu, setShowUserMenu] = useState(false);
-  
-  const baseUrl = user?.role === UserRole.LECTURER ? '/lecturer' : '/student';
+  const [isDark, setIsDark] = useState(false);
+
+  const isLecturer = user?.role === 'lecturer';
+  const baseUrl = isLecturer ? '/lecturer' : '/student';
 
   const handleLogout = async () => {
     try {
+      setShowUserMenu(false);
       await logoutMutation.mutateAsync();
       navigate('/login');
     } catch (error) {
       console.error('Logout error:', error);
-      // Vẫn navigate về login dù có lỗi
       navigate('/login');
     }
   };
 
-  const navItems = ['Courses', 'Calendar', 'Assignment', 'Blog'];
-  const [isDark, setIsDark] = useState(false);
+  const navItems = ['Courses', 'Calendar', 'Blog'];
 
-  // Load theme từ localStorage khi component mount
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
     if (savedTheme === 'dark') {
@@ -43,17 +40,14 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
     }
   }, []);
 
-  // Lưu theme vào localStorage khi thay đổi
   useEffect(() => {
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
   }, [isDark]);
 
-  // Toggle dark mode
   const toggleDarkMode = () => {
     setIsDark(!isDark);
     document.documentElement.classList.toggle('dark');
   }
-
 
   return (
     <header className="w-full z-50 flex justify-between items-center shadow-lg px-4 md:px-10 py-3 bg-surface">
@@ -246,7 +240,9 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
                       setShowUserMenu(false);
                       handleLogout();
                     }}
-                    className="w-full text-left px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors duration-150 flex items-center gap-3 group"
+                    className="w-full text-left px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors duration-150 flex items-center gap-3 group disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={logoutMutation.isLoading}
+                    aria-busy={logoutMutation.isLoading}
                   >
                     <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/30 group-hover:bg-red-200 dark:group-hover:bg-red-900/50 transition-colors">
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24" className="text-red-600 dark:text-red-400" role="img" aria-labelledby="svg-logout-title">

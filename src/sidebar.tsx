@@ -15,7 +15,7 @@ export default function Sidebar({ currentPage, isOpen, onClose }: SidebarProps) 
 
     const navItems = user?.role === UserRole.LECTURER 
   ? ['Courses', 'Students', 'Analytics']
-  : ['Courses', 'Calendar', 'Assignment', 'Blog'];
+  : ['Courses', 'Calendar', 'Blog'];
 
     return (
         <>
@@ -66,7 +66,6 @@ export default function Sidebar({ currentPage, isOpen, onClose }: SidebarProps) 
                             const iconMap: Record<string, React.ReactNode> = {
                                 'courses': <BookIcon />,
                                 'calendar': <LessonIcon />,
-                                'assignment': <AssessmentIcon />,
                                 'blog': <ChallengeIcon />,
                                 'students': <ProjectIcon />,
                                 'analytics': <AssessmentIcon />,

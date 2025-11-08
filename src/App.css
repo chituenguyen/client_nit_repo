@@ -9,9 +9,10 @@
   --color-component: #c7c8c9;
 
   /* Semantic */
+  --color-normal: rgb(59 130 246);
   --color-success: #00ff7f;
-  --color-danger: #ff4c4c;
-  --color-warning: #ffd700;
+  --color-danger:  rgb(239 68 68);
+  --color-warning: rgb(234 179 8);
   --color-info: #a0a0a0;
 
   /* Neutral */
@@ -29,6 +30,7 @@ html.dark {
 
   --color-component: #a0a0a0;
 
+  --color-normal: #3b82f6;
   --color-success: #00ff7f;
   --color-danger: #ff4c4c;
   --color-warning: #ffd700;
@@ -157,7 +159,8 @@ html.dark {
     font-family: "Poppins", sans-serif;
     background-color: var(--color-surface);
     color: var(--color-text-main);
-    height: 100%;
+    height: 100vh;
+    width: 100vw;
     overflow: hidden;
   }
 

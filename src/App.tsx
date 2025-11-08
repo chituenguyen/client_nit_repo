@@ -20,7 +20,7 @@ export default function App() {
           onMenuClick={() => setIsSidebarOpen(true)}
         />
 
-        <div className='relative flex-1 flex flex-col overflow-auto'>
+        <div className='main relative flex-1 flex flex-col overflow-x-hidden overflow-y-auto'>
           <div className='flex'>
             <Sidebar 
               currentPage={location.pathname}
@@ -28,7 +28,7 @@ export default function App() {
               onClose={() => setIsSidebarOpen(false)}
             />
             
-            <div className="main flex-1 flex flex-col gap-5 overflow-y-auto">
+            <div className="flex-1 flex flex-col gap-5 overflow-x-hidden">
                 {isHome && (
                     <>
                       {/* Welcome Section */}
