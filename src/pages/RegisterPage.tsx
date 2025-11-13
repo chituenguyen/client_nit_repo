@@ -2,7 +2,7 @@ import { useState, forwardRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm, type FieldError } from 'react-hook-form';
 import { useRegisterStudent, useRegisterLecturer } from '../hooks/useAuthQuery';
-import type { StudentRegisterData, LecturerRegisterData } from '../pages/api';
+import type { StudentRegisterData, LecturerRegisterData } from '../api/api';
 
 type RegisterFormData = {
   fullName: string;

@@ -5,18 +5,19 @@ import LoginPage from '../pages/LoginPage';
 import RegisterPage from '../pages/RegisterPage';
 import ProtectedRoute from '../components/ProtectedRoute';
 import RoleBasedRoute from '../components/RoleBasedRoute';
-import { UserRole } from '../util/authUtils';
+import { UserRole } from '../types';
 import RoleRedirect from '../components/RoleRedirect';
 
 // Import các pages
 import CoursePage from '../pages/coursePage';
-import CalendarPage from '../pages/calendarPage';
+import CalendarPageLecturer from '../pages/calendarPageLecturer';
 import AssignmentPage from '../pages/assignmentPage';
 import BlogPage from '../pages/blogPage';
 import LecturerApp from '../LecturerApp';
 import LecturerCoursesPage from '../pages/LecturerCoursesPage';
 import CreateCoursePage from '../pages/CreateCoursePage';
 import CreateAssignmentPage from '../pages/CreateAssignmentPage';
+import AssignmentDetailPage from '../pages/AssignmentDetailPage';
 
 
 const router = createBrowserRouter([
@@ -53,7 +54,7 @@ const router = createBrowserRouter([
     children: [
       { path: '', element: <Navigate to="/student/courses" replace /> },
       { path: 'courses', element: <CoursePage /> },
-      { path: 'calendar', element: <CalendarPage /> },
+      // { path: 'calendar', element: <CalendarPage /> },
       { path: 'assignment', element: <AssignmentPage /> },
       { path: 'blog', element: <BlogPage /> },
     ],
@@ -75,6 +76,9 @@ const router = createBrowserRouter([
       { path: 'courses/create', element: <CreateCoursePage /> },
       { path: 'courses/:courseId/edit', element: <CreateCoursePage /> },
       { path: 'courses/:courseId/assignments/create', element: <CreateAssignmentPage /> },
+      { path: 'assignment', element: <AssignmentPage /> },
+      { path: 'assignment/:assignmentId', element: <AssignmentDetailPage /> },
+      { path: 'calendar', element: <CalendarPageLecturer /> },
       { path: 'students', element: <div>Quản lý học viên</div> },
       { path: 'analytics', element: <div>Thống kê</div> },
     ],

@@ -1,8 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { authApi, type StudentRegisterData, type LecturerRegisterData } from '../pages/api';
+import { authApi, type StudentRegisterData, type LecturerRegisterData } from '../api/api';
 import { useAuthStore } from '../stores/authStore';
 import { queryKeys } from '../config/queryClient';
-import { type User, normalizeRole } from '../util/authUtils';
+import type { User } from '../types';
+import { normalizeRole } from '../types';
 
 // Hook get current user
 export const useCurrentUser = () => {

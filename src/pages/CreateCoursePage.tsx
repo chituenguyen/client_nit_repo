@@ -2,7 +2,8 @@ import { forwardRef, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useForm, useFieldArray, type FieldError } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { courseApi, type Course, type CourseSchedule, type CreateCourseData, type CreateScheduleData } from './api';
+import { courseApi } from '../api/courseApi';
+import type { Course, Schedule, CreateCourseData, CreateScheduleData } from '../types';
 import { useAuthStore } from '../stores/authStore';
 import { MdCloudUpload } from 'react-icons/md';
 
@@ -79,8 +80,8 @@ export default function CreateCoursePage() {
   const { data: scheduleDetail, isLoading: isScheduleLoading } = useQuery({
     queryKey: ['course-schedules', courseId],
     queryFn: async () => {
-      if (!courseId) return [] as CourseSchedule[];
-      const response = await courseApi.getCourseSchedules(courseId);
+      if (!courseId) return [] as Schedule[];
+      const response = await courseApi.getSchedules(courseId);
       const payload = (response as any)?.data ?? response;
       return Array.isArray(payload?.data)
         ? payload.data
@@ -223,7 +224,7 @@ useEffect(() => {
   }
 
   const detail = courseDetail as Course;
-  const scheduleItems = (scheduleDetail ?? []).map((schedule: CourseSchedule) => ({
+  const scheduleItems = (scheduleDetail ?? []).map((schedule: Schedule) => ({
     id: schedule.id,
     semester: schedule.semester ?? '',
     academicYear: schedule.academicYear ?? '',

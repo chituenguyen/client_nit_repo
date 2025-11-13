@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useQuery } from '@tanstack/react-query';
-import { assignmentApi, type Assignment } from './api';
+import { assignmentApi } from '../api/assignmentApi';
+import type { Assignment } from '../types';
 
 type AssignmentFormData = {
   title: string;
@@ -41,7 +42,7 @@ export default function CreateAssignmentPage() {
     queryKey: ['assignments', courseId],
     queryFn: async () => {
       if (!courseId) return [];
-      const response = await assignmentApi.getByCourseId(courseId);
+      const response = await assignmentApi.getAssignmentsByCourse(courseId);
       const payload = (response as any)?.data ?? response;
       return Array.isArray(payload) ? payload : Array.isArray(payload?.data) ? payload.data : [];
     },

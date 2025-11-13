@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom"
-import { UserRole } from './util/authUtils';
+import { UserRole } from './types';
 import React from 'react'
 import { useAuthStore } from "./stores/authStore";
 
@@ -14,7 +14,7 @@ export default function Sidebar({ currentPage, isOpen, onClose }: SidebarProps) 
     const baseUrl = user?.role === UserRole.LECTURER ? '/lecturer' : '/student';
 
     const navItems = user?.role === UserRole.LECTURER 
-  ? ['Courses', 'Students', 'Analytics']
+  ? ['Courses', 'Assignment', 'Students', 'Analytics']
   : ['Courses', 'Calendar', 'Assignment', 'Blog'];
 
     return (

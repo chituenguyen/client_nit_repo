@@ -1,7 +1,8 @@
 import { create } from 'zustand';
-import { authApi, type StudentRegisterData, type LecturerRegisterData } from '../pages/api';
-// Import từ authUtils.ts thay vì tạo lại
-import {type User, UserRole, normalizeRole } from '../util/authUtils';
+import { authApi, type StudentRegisterData, type LecturerRegisterData } from '../api/api';
+// Import từ types.ts
+import type { User } from '../types';
+import { UserRole, normalizeRole } from '../types';
 
 interface AuthStore {
     // State

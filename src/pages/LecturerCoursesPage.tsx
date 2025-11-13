@@ -11,7 +11,8 @@ import {
   MdOutlineSort,
   MdOutlineSchedule,
 } from "react-icons/md";
-import { courseApi, type Course, type CourseSchedule } from "./api";
+import { courseApi } from "../api/courseApi";
+import type { Course, Schedule } from "../types";
 import { useAuthStore } from "../stores/authStore";
 
 const DAY_OF_WEEK_LABELS: Record<string, string> = {
@@ -151,7 +152,7 @@ export default function LecturerCoursesPage() {
   const [dayFilter, setDayFilter] = useState<string>("ALL");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name">("newest");
   const [scheduleMap, setScheduleMap] = useState<
-    Record<string, CourseSchedule[]>
+    Record<string, Schedule[]>
   >({});
   const fetchedScheduleIds = useRef<Set<string>>(new Set());
   const [hoverCourseId, setHoverCourseId] = useState<string | null>(null);
@@ -242,7 +243,7 @@ export default function LecturerCoursesPage() {
             try {
               const response = await courseApi.getCourseSchedules(courseId);
               const payload = (response as any)?.data ?? response;
-              const schedules: CourseSchedule[] = Array.isArray(payload)
+              const schedules: Schedule[] = Array.isArray(payload)
                 ? payload
                 : Array.isArray(payload?.data)
                 ? payload.data
@@ -256,7 +257,7 @@ export default function LecturerCoursesPage() {
                 courseId,
                 error
               );
-              return { courseId, schedules: [] as CourseSchedule[] };
+              return { courseId, schedules: [] as Schedule[] };
             }
           })
         );
