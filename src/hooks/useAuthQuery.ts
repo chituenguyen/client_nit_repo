@@ -1,10 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { authApi, type StudentRegisterData, type LecturerRegisterData } from '../pages/api';
+import { authApi, type StudentRegisterData, type LecturerRegisterData } from '../api/api';
 import { useAuthStore } from '../stores/authStore';
 import { queryKeys } from '../config/queryClient';
-import { type User, normalizeRole } from '../util/authUtils';
+import type { User } from '../types';
+import { normalizeRole } from '../types';
 
-// Hook để lấy thông tin user hiện tại
+// Hook get current user
 export const useCurrentUser = () => {
   const setUser = useAuthStore(state => state.setUser);
   
@@ -33,7 +34,7 @@ export const useCurrentUser = () => {
   });
 };
 
-// Hook login với React Query
+// Hook login
 export const useLogin = () => {
   const setUser = useAuthStore(state => state.setUser);
   const queryClient = useQueryClient();
@@ -45,29 +46,50 @@ export const useLogin = () => {
     },
     onSuccess: (data) => {
       if (data) {
-        const { user, token } = data;
+        const { user, accessToken, refreshToken } = data;
+        
+        if (!accessToken) {
+          console.error('Backend không trả về accessToken');
+          alert('Lỗi đăng nhập: Không nhận được token từ server!');
+          return;
+        }
+        
+        // Extract lecturerId or studentId from nested objects
+        const lecturerId = user.lecturer?.id;
+        const studentId = user.student?.id;
+        
+        console.log('Extracted IDs:', { 
+          userId: user.id, 
+          lecturerId, 
+          studentId 
+        });
         
         const normalized: User = {
           id: String(user.id),
           email: user.email,
           full_name: user.fullName || user.full_name || '',
-          avatar: user.avatar || `https://i.pravatar.cc/150?u=${user.email}`,
+          avatar: user.avatarUrl || user.avatar || `https://i.pravatar.cc/150?u=${user.email}`,
           role: normalizeRole(user.role),
           phone: user.phone,
           createdAt: user.createdAt || new Date().toISOString(),
-          updatedAt: user.updatedAt
+          updatedAt: user.updatedAt,
+          lecturerId: lecturerId || undefined,
+          studentId: studentId || undefined
         };
         
         setUser(normalized);
         localStorage.setItem('user', JSON.stringify({ id: normalized.id, role: normalized.role }));
-        localStorage.setItem('token', token);
+        localStorage.setItem('token', accessToken);
+        if (refreshToken) {
+          localStorage.setItem('refreshToken', refreshToken);
+        }
         
         // Invalidate và refetch current user
         queryClient.setQueryData(queryKeys.auth.currentUser, normalized);
       }
     },
     onError: (error: any) => {
-      console.error('Login error:', error);
+      console.error('Login error:', error.response?.data || error.message);
     }
   });
 };
@@ -102,22 +124,28 @@ export const useRegisterStudent = () => {
     },
     onSuccess: (data) => {
       if (data) {
-        const { user, token } = data;
+        const { user, accessToken, refreshToken } = data;
+        
+        const studentId = user.student?.id;
         
         const normalized: User = {
           id: String(user.id),
           email: user.email,
           full_name: user.fullName || user.full_name || '',
-          avatar: user.avatar || `https://i.pravatar.cc/150?u=${user.email}`,
+          avatar: user.avatarUrl || user.avatar || `https://i.pravatar.cc/150?u=${user.email}`,
           role: normalizeRole(user.role),
           phone: user.phone,
           createdAt: user.createdAt || new Date().toISOString(),
-          updatedAt: user.updatedAt
+          updatedAt: user.updatedAt,
+          studentId: studentId || undefined
         };
         
         setUser(normalized);
         localStorage.setItem('user', JSON.stringify({ id: normalized.id, role: normalized.role }));
-        localStorage.setItem('token', token);
+        localStorage.setItem('token', accessToken || '');
+        if (refreshToken) {
+          localStorage.setItem('refreshToken', refreshToken);
+        }
         
         queryClient.setQueryData(queryKeys.auth.currentUser, normalized);
       }
@@ -137,22 +165,28 @@ export const useRegisterLecturer = () => {
     },
     onSuccess: (data) => {
       if (data) {
-        const { user, token } = data;
+        const { user, accessToken, refreshToken } = data;
+        
+        const lecturerId = user.lecturer?.id;
         
         const normalized: User = {
           id: String(user.id),
           email: user.email,
           full_name: user.fullName || user.full_name || '',
-          avatar: user.avatar || `https://i.pravatar.cc/150?u=${user.email}`,
+          avatar: user.avatarUrl || user.avatar || `https://i.pravatar.cc/150?u=${user.email}`,
           role: normalizeRole(user.role),
           phone: user.phone,
           createdAt: user.createdAt || new Date().toISOString(),
-          updatedAt: user.updatedAt
+          updatedAt: user.updatedAt,
+          lecturerId: lecturerId || undefined
         };
         
         setUser(normalized);
         localStorage.setItem('user', JSON.stringify({ id: normalized.id, role: normalized.role }));
-        localStorage.setItem('token', token);
+        localStorage.setItem('token', accessToken || '');
+        if (refreshToken) {
+          localStorage.setItem('refreshToken', refreshToken);
+        }
         
         queryClient.setQueryData(queryKeys.auth.currentUser, normalized);
       }

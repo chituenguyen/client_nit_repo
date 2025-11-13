@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useAuthStore } from './stores/authStore';
-import { UserRole } from './util/authUtils';
+import { UserRole } from './types';
 import { useNavigate } from 'react-router-dom';
 import { useLogout } from './hooks/useAuthQuery';
 
