@@ -1,5 +1,5 @@
 import { authApi, type StudentRegisterData, type LecturerRegisterData, type LoginResponse } from './api';
-import { type User, normalizeRole } from '../util/authUtils';
+import { type User, normalizeRole } from '../types';
 
 // Helper function to normalize user from API response
 const normalizeUser = (apiUser: LoginResponse['user']): User => {

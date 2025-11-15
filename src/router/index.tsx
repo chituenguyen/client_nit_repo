@@ -5,7 +5,7 @@ import LoginPage from '../pages/LoginPage';
 import RegisterPage from '../pages/RegisterPage';
 import ProtectedRoute from '../components/ProtectedRoute';
 import RoleBasedRoute from '../components/RoleBasedRoute';
-import { UserRole } from '../util/authUtils';
+import { UserRole } from '../types';
 import RoleRedirect from '../components/RoleRedirect';
 
 // Import các pages
@@ -16,7 +16,10 @@ import AssignmentPage from '../pages/assignmentPage';
 import BlogPage from '../pages/blogPage';
 import LecturerApp from '../LecturerApp';
 import LecturerCoursesPage from '../pages/LecturerCoursesPage';
+import CalendarPageLecturer from '../pages/calendarPageLecturer';
 import CreateCoursePage from '../pages/CreateCoursePage';
+import CreateAssignmentPage from '../pages/CreateAssignmentPage';
+import AssignmentDetailPage from '../pages/AssignmentDetailPage';
 
 
 const router = createBrowserRouter([
@@ -74,6 +77,10 @@ const router = createBrowserRouter([
       { path: 'courses', element: <LecturerCoursesPage /> },
       { path: 'courses/create', element: <CreateCoursePage /> },
       { path: 'courses/:courseId/edit', element: <CreateCoursePage /> },
+      { path: 'courses/:courseId/assignments/create', element: <CreateAssignmentPage /> },
+      { path: 'assignment', element: <AssignmentPage /> },
+      { path: 'assignment/:assignmentId', element: <AssignmentDetailPage /> },
+      { path: 'calendar', element: <CalendarPageLecturer /> },
       { path: 'students', element: <div>Quản lý học viên</div> },
       { path: 'analytics', element: <div>Thống kê</div> },
     ],

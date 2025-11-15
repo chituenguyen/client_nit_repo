@@ -11,7 +11,7 @@ import { useAssignmentStore } from '../stores/assignmentStore';
 import { useAllMySubmissions } from '../hooks/useAssignmentQuery';
 import { IoIosWarning } from 'react-icons/io';
 import { FaFire } from 'react-icons/fa';
-import type { Assignment } from '../api/assignmentApi';
+import type { Assignment } from '../types';
 import { createPortal } from 'react-dom';
 import SubmissionModal from '../components/SubmissionModal';
 

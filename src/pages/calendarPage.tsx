@@ -12,7 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 import assignmentApi from "../api/assignmentApi";
 import { useAllMySubmissions } from "../hooks/useAssignmentQuery";
 import type { CalendarView } from "../types";
-import type { Assignment } from "../api/assignmentApi";
+import type { Assignment } from "../types";
 
 dayjs.extend(isoWeek);
 dayjs.extend(isSameOrBefore);

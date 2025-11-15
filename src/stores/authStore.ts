@@ -1,10 +1,12 @@
 import { create } from 'zustand';
-import type { User } from '../util/authUtils';
+import type { User } from '../types';
 import { getCurrentUserService, logoutService } from '../api/authApi';
 
 interface AuthStore {
   user: User | null;
+  isLoading: boolean;
   setUser: (user: User | null) => void;
+  setLoading: (loading: boolean) => void;
   clearUser: () => void;
   logout: () => Promise<void>;
   checkAuth: () => Promise<User | null>;
@@ -12,8 +14,14 @@ interface AuthStore {
 
 export const useAuthStore = create<AuthStore>((set) => ({
   user: null,
+  isLoading: false,
+  
   setUser: (user) => set({ user }),
+  
+  setLoading: (isLoading) => set({ isLoading }),
+  
   clearUser: () => set({ user: null }),
+  
   logout: async () => {
     try {
       await logoutService();
@@ -23,13 +31,18 @@ export const useAuthStore = create<AuthStore>((set) => ({
       set({ user: null });
     }
   },
+  
   checkAuth: async () => {
     const token = localStorage.getItem('token');
-    if (!token) return null; 
+    if (!token) {
+      set({ isLoading: false });
+      return null;
+    }
 
+    set({ isLoading: true });
     try {
       const user = await getCurrentUserService();
-      set({ user });
+      set({ user, isLoading: false });
       return user;
     } catch (error) {
       console.error('Auth check failed:', error);
@@ -37,6 +50,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
       localStorage.removeItem('token');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
+      set({ user: null, isLoading: false });
       return null;
     }
   },

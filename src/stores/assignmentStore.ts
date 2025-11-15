@@ -1,7 +1,7 @@
 // src/stores/assignmentStore.ts
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import { type Assignment, type Submission } from '../api/assignmentApi';
+import { type Assignment, type Submission } from '../types';
 
 interface AssignmentStore {
   // State

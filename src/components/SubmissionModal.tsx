@@ -5,7 +5,7 @@ import { AiOutlineLoading3Quarters } from 'react-icons/ai';
 import { BiErrorCircle } from 'react-icons/bi';
 import { FaFile, FaDownload, FaCheckCircle } from 'react-icons/fa';
 import toast from 'react-hot-toast';
-import { type Assignment } from '../api/assignmentApi';
+import { type Assignment } from '../types';
 import { useMySubmission } from '../hooks/useAssignmentQuery';
 import { useSubmitAssignment, useUpdateSubmission } from '../hooks/useSubmissionQuery';
 

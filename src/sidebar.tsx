@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom"
-import { UserRole } from './util/authUtils';
+import { UserRole } from './types';
 import React from 'react'
 import { useAuthStore } from "./stores/authStore";
 
