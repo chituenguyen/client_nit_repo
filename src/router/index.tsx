@@ -7,6 +7,7 @@ import ProtectedRoute from '../components/ProtectedRoute';
 import RoleBasedRoute from '../components/RoleBasedRoute';
 import { UserRole } from '../types';
 import RoleRedirect from '../components/RoleRedirect';
+import ChatPage from '../pages/ChatPage';
 
 // Import các pages cho Student
 import CoursePage from '../pages/Student/StudentCoursePage';
@@ -16,7 +17,7 @@ import AssignmentPage from '../pages/Student/StudentAssignmentPage';
 import BlogPage from '../pages/Student/StudentBlogPage';
 
 // Import các pages cho Lecturer
-import LecturerApp from '../LecturerApp';
+import LecturerApp from '../pages/Lecturer/LecturerApp';
 import LecturerCoursesPage from '../pages/Lecturer/LecturerCoursesPage';
 import CalendarPageLecturer from '../pages/Lecturer/LecturerCalendarPage';
 import CreateCoursePage from '../pages/Lecturer/CreateCoursePage';
@@ -61,6 +62,7 @@ const router = createBrowserRouter([
       { path: 'courses/:id/assignments', element: <AssignmentPage /> },
       { path: 'calendar', element: <CalendarPage /> },
       { path: 'blog', element: <BlogPage /> },
+      { path: 'chat', element: <ChatPage /> },
     ],
   },
 
@@ -85,6 +87,7 @@ const router = createBrowserRouter([
       { path: 'calendar', element: <CalendarPageLecturer /> },
       { path: 'students', element: <div>Quản lý học viên</div> },
       { path: 'analytics', element: <div>Thống kê</div> },
+      { path: 'chat', element: <ChatPage /> },
     ],
   },
 

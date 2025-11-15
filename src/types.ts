@@ -362,3 +362,83 @@ export const UserRole = {
     }
     return UserRole.STUDENT;
   };
+
+ // ==================== CHAT TYPES ====================
+
+export interface ChatUser {
+  id: string;
+  email: string;
+  fullName: string;
+  avatarUrl: string | null;
+  role: 'STUDENT' | 'LECTURER';
+}
+
+export interface Chat {
+  id: string;
+  senderId: string;
+  receiverId: string;
+  messageContent: string;
+  isRead: boolean;
+  sentAt: string;
+  readAt: string | null;
+  sender: ChatUser;
+  receiver: ChatUser;
+}
+
+export interface ChatHistoryParams {
+  userId: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface ChatMeta {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface ChatHistoryResponse {
+  success: boolean;
+  data: {
+    data: Chat[];
+    otherUser: ChatUser;
+    meta: ChatMeta;
+  };
+  message?: string;
+}
+
+export interface SendChatPayload {
+  receiverId: string;
+  messageContent: string;
+}
+
+export interface SendChatResponse {
+  success: boolean;
+  data: Chat;
+  message?: string;
+}
+
+export interface ChatListUser {
+  user: {
+    id: string;
+    email: string;
+    fullName: string;
+    avatarUrl: string | null;
+    role: 'STUDENT' | 'LECTURER';
+  };
+  lastMessage: {
+    id: string;
+    messageContent: string;
+    sentAt: string;
+    isRead: boolean;
+    isSentByMe: boolean;
+  };
+  unreadCount: number;
+}
+
+export interface ChatConversationsResponse {
+  success: boolean;
+  data: ChatListUser[];
+  message?: string;
+}

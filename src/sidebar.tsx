@@ -14,8 +14,8 @@ export default function Sidebar({ currentPage, isOpen, onClose }: SidebarProps) 
     const baseUrl = user?.role === UserRole.LECTURER ? '/lecturer' : '/student';
 
     const navItems = user?.role === UserRole.LECTURER 
-  ? ['Courses', 'Students', 'Analytics']
-  : ['Courses', 'Calendar', 'Blog'];
+  ? ['Courses', 'Students', 'Analytics', 'Chat']
+  : ['Courses', 'Calendar', 'Blog', 'Chat'];
 
     return (
         <>
@@ -69,6 +69,7 @@ export default function Sidebar({ currentPage, isOpen, onClose }: SidebarProps) 
                                 'blog': <ChallengeIcon />,
                                 'students': <ProjectIcon />,
                                 'analytics': <AssessmentIcon />,
+                                'chat': <ChatIcon />,
                             };
 
                             return (
@@ -144,4 +145,12 @@ function ProjectIcon() {
             <path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-1 6h-3v3h-2v-3h-3v-2h3V7h2v3h3v2z"/>
         </svg>
     )
+}
+
+function ChatIcon() {
+  return (
+    <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
+    </svg>
+  );
 }

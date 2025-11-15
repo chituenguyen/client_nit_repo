@@ -1,8 +1,8 @@
 import { Outlet, useLocation } from 'react-router-dom';
-import Header from './header';
-import Sidebar from './sidebar';
+import Header from '../../header';
+import Sidebar from '../../sidebar';
 import { useState } from 'react';
-import { useAuthStore } from './stores/authStore';
+import { useAuthStore } from '../../stores/authStore';
 
 export default function LecturerApp() {
   const location = useLocation();

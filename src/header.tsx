@@ -32,8 +32,8 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
   };
 
   const navItems = user?.role === UserRole.LECTURER 
-    ? ['Courses', 'Students', 'Analytics', 'Assignment']
-    : ['Courses', 'Calendar', 'Blog'];
+    ? ['Courses', 'Students', 'Analytics', 'Assignment', 'Chat']
+    : ['Courses', 'Calendar', 'Blog' , 'Chat'];
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
