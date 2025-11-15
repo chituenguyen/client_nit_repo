@@ -1,7 +1,7 @@
 // src/stores/courseStore.ts
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import { type Course, type Enrollment } from '../api/courseApi';
+import { type Course, type Enrollment } from '../types';
 
 interface CourseStore {
   // State

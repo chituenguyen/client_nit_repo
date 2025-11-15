@@ -1,6 +1,6 @@
 // src/api/assignmentApi.ts
 import api from './api';
-import { type AxiosResponse } from 'axios';
+import { type AxiosResponse, AxiosError } from 'axios';
 
 // ==================== TYPES ====================
 
@@ -77,6 +77,14 @@ export interface UpdateSubmissionResponse {
   message?: string;
 }
 
+// ==================== ERROR TYPES ====================
+
+interface ApiErrorResponse {
+  message?: string;
+  statusCode?: number;
+  error?: string;
+}
+
 // ==================== API METHODS ====================
 
 export const assignmentApi = {
@@ -130,11 +138,12 @@ export const assignmentApi = {
     try {
       const response = await api.post(`/assignments/${assignmentId}/submit`, formData);
       return response;
-    } catch (error: any) {
+    } catch (error) {
+      const axiosError = error as AxiosError<ApiErrorResponse>;
       console.error('❌ Submit failed:', {
-        status: error.response?.status,
-        data: error.response?.data,
-        message: error.message,
+        status: axiosError.response?.status,
+        data: axiosError.response?.data,
+        message: axiosError.message,
       });
       throw error;
     }
@@ -178,11 +187,12 @@ export const assignmentApi = {
       );
       console.log('✅ Update submission success:', response.data);
       return response;
-    } catch (error: any) {
+    } catch (error) {
+      const axiosError = error as AxiosError<ApiErrorResponse>;
       console.error('❌ Update submission failed:', {
-        status: error.response?.status,
-        data: error.response?.data,
-        message: error.message,
+        status: axiosError.response?.status,
+        data: axiosError.response?.data,
+        message: axiosError.message,
       });
       throw error;
     }

@@ -1,8 +1,16 @@
 // src/hooks/useCourseQuery.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { courseApi, type CoursesParams, type Enrollment} from '../api/courseApi';
+import courseApi from '../api/courseApi';
+import { type CoursesParams, type Enrollment, type Course } from '../types';
 import { useCourseStore } from '../stores/courseStore';
 import { AxiosError } from 'axios';
+
+// ==================== ERROR TYPES ====================
+interface ApiErrorResponse {
+  message?: string;
+  statusCode?: number;
+  error?: string;
+}
 
 // ==================== QUERY KEYS ====================
 export const courseKeys = {
@@ -13,30 +21,54 @@ export const courseKeys = {
   detail: (courseCode: string) => [...courseKeys.details(), courseCode] as const,
 };
 
+// ==================== RESPONSE TYPES ====================
+interface ParsedCourseResponse {
+  courses: Course[];
+  total: number;
+  page?: number;
+  limit?: number;
+}
+
 // ==================== UTILITY FUNCTION ====================
-const parseCourseResponse = (res: any) => {
-  if (res.data?.data) {
-    if (Array.isArray(res.data.data)) {
-      return { courses: res.data.data, total: res.data.data.length };
+const parseCourseResponse = (res: unknown): ParsedCourseResponse => {
+  // Type guard helper
+  const isObject = (val: unknown): val is Record<string, unknown> => {
+    return typeof val === 'object' && val !== null;
+  };
+
+  if (!isObject(res)) {
+    console.warn('Response is not an object:', res);
+    return { courses: [], total: 0 };
+  }
+
+  // Check res.data.data
+  if (isObject(res.data)) {
+    const data = res.data.data;
+    
+    if (Array.isArray(data)) {
+      return { courses: data as Course[], total: data.length };
     }
-    if (res.data.data.items && Array.isArray(res.data.data.items)) {
+    
+    if (isObject(data) && Array.isArray(data.items)) {
       return {
-        courses: res.data.data.items,
-        total: res.data.data.total || res.data.data.items.length,
-        page: res.data.data.page,
-        limit: res.data.data.limit,
+        courses: data.items as Course[],
+        total: typeof data.total === 'number' ? data.total : data.items.length,
+        page: typeof data.page === 'number' ? data.page : undefined,
+        limit: typeof data.limit === 'number' ? data.limit : undefined,
       };
     }
   }
   
-  if (res.data && Array.isArray(res.data)) {
-    return { courses: res.data, total: res.data.length };
+  // Check res.data directly
+  if (Array.isArray(res.data)) {
+    return { courses: res.data as Course[], total: res.data.length };
   }
   
-  if (res.data?.items && Array.isArray(res.data.items)) {
+  // Check res.data.items
+  if (isObject(res.data) && Array.isArray(res.data.items)) {
     return {
-      courses: res.data.items,
-      total: res.data.total || res.data.items.length,
+      courses: res.data.items as Course[],
+      total: typeof res.data.total === 'number' ? res.data.total : res.data.items.length,
     };
   }
 
@@ -54,7 +86,6 @@ export const useCourses = (params?: CoursesParams) => {
   const setLoading = useCourseStore((s) => s.setLoading);
   const setError = useCourseStore((s) => s.setError);
   const setPagination = useCourseStore((s) => s.setPagination);
-
 
   return useQuery({
     queryKey: courseKeys.list(params),
@@ -77,7 +108,7 @@ export const useCourses = (params?: CoursesParams) => {
         
         return courses;
       } catch (err) {
-        const error = err as AxiosError<{ message?: string }>;
+        const error = err as AxiosError<ApiErrorResponse>;
         const errorMessage = error.response?.data?.message || 'Không thể tải danh sách khóa học';
         
         console.error('❌ Lỗi khi tải khóa học:', {
@@ -122,7 +153,7 @@ export const useCourseDetail = (id: string | undefined) => {
         
         return course;
       } catch (err) {
-        const error = err as AxiosError<{ message?: string }>;
+        const error = err as AxiosError<ApiErrorResponse>;
         const errorMessage = error.response?.data?.message || 'Không thể tải chi tiết khóa học';
         
         console.error('❌ Lỗi khi tải chi tiết khóa học:', {
@@ -161,7 +192,7 @@ export const useEnrollCourse = () => {
       console.log('✅ Đăng ký khóa học thành công:', response.data);
     },
     onError: (err) => {
-      const error = err as AxiosError<{ message?: string }>;
+      const error = err as AxiosError<ApiErrorResponse>;
       const errorMessage = error.response?.data?.message || 'Không thể đăng ký khóa học';
       
       console.error('❌ Lỗi khi đăng ký khóa học:', error);
@@ -188,7 +219,7 @@ export const useUnenrollCourse = () => {
       console.log('✅ Hủy đăng ký khóa học thành công:', response.data);
     },
     onError: (err) => {
-      const error = err as AxiosError<{ message?: string }>;
+      const error = err as AxiosError<ApiErrorResponse>;
       const errorMessage = error.response?.data?.message || 'Không thể hủy đăng ký khóa học';
       
       console.error('❌ Lỗi khi hủy đăng ký khóa học:', error);
@@ -228,7 +259,7 @@ export const useMyEnrollments = (status: EnrollmentStatus) => {
 
         return enrollments;
       } catch (err) {
-        const error = err as AxiosError<{ message?: string }>;
+        const error = err as AxiosError<ApiErrorResponse>;
         const errorMessage =
           error.response?.data?.message ||
           'Không thể tải danh sách khóa học đã đăng ký';
