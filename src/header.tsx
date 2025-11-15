@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
+import { UserRole } from './types';
 import { useLogout } from "./hooks/useAuthQuery";
 import { useAuthStore } from './stores/authStore';
 
@@ -30,7 +31,9 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
     }
   };
 
-  const navItems = ['Courses', 'Calendar', 'Blog'];
+  const navItems = user?.role === UserRole.LECTURER 
+    ? ['Courses', 'Students', 'Analytics', 'Assignment']
+    : ['Courses', 'Calendar', 'Blog'];
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");

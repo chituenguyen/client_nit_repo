@@ -7,12 +7,12 @@ import { AiOutlineLoading3Quarters } from "react-icons/ai";
 import { BiErrorCircle } from "react-icons/bi";
 import { MdAssignment } from "react-icons/md";
 import { FaCheckCircle } from "react-icons/fa";
-import { useMyEnrollments } from "../hooks/useCourseQuery";
+import { useMyEnrollments } from "../../hooks/useCourseQuery";
 import { useQuery } from "@tanstack/react-query";
-import assignmentApi from "../api/assignmentApi";
-import { useAllMySubmissions } from "../hooks/useAssignmentQuery";
-import type { CalendarView } from "../types";
-import type { Assignment } from "../types";
+import assignmentApi from "../../api/assignmentApi";
+import { useAllMySubmissions } from "../../hooks/useAssignmentQuery";
+import type { CalendarView } from "../../types";
+import type { Assignment } from "../../types";
 
 dayjs.extend(isoWeek);
 dayjs.extend(isSameOrBefore);

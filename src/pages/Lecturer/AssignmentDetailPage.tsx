@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { assignmentApi } from '../api/assignmentApi';
-import type { Assignment, Submission } from '../types';
+import { assignmentApi } from '../../api/assignmentApi';
+import type { Assignment, Submission } from '../../types';
 import {
   MdArrowBack,
   MdPeople,

@@ -2,9 +2,9 @@ import { forwardRef, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useForm, useFieldArray, type FieldError } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { courseApi } from '../api/courseApi';
-import type { Course, Schedule, CreateCourseData, CreateScheduleData } from '../types';
-import { useAuthStore } from '../stores/authStore';
+import { courseApi } from '../../api/courseApi';
+import type { Course, Schedule, CreateCourseData, CreateScheduleData } from '../../types';
+import { useAuthStore } from '../../stores/authStore';
 import { MdCloudUpload } from 'react-icons/md';
 
 type ScheduleFormData = {

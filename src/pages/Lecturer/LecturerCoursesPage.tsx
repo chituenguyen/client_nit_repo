@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { useDebounce } from "../hooks/useDebounce";
+import { useDebounce } from "../../hooks/useDebounce";
 import {
   MdPlayLesson,
   MdEdit,
@@ -11,9 +11,9 @@ import {
   MdOutlineSort,
   MdOutlineSchedule,
 } from "react-icons/md";
-import { courseApi } from "../api/courseApi";
-import type { Course, Schedule } from "../types";
-import { useAuthStore } from "../stores/authStore";
+import { courseApi } from "../../api/courseApi";
+import type { Course, Schedule } from "../../types";
+import { useAuthStore } from "../../stores/authStore";
 
 const DAY_OF_WEEK_LABELS: Record<string, string> = {
   MONDAY: "Thứ Hai",

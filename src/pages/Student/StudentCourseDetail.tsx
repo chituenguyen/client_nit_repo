@@ -4,12 +4,12 @@ import { AiOutlineLoading3Quarters } from 'react-icons/ai';
 import { BiErrorCircle } from 'react-icons/bi';
 import { MdPlayLesson, MdAssignment } from 'react-icons/md';
 import { GrCertificate } from 'react-icons/gr';
-import { useCourseDetail, useEnrollCourse, useUnenrollCourse, useMyEnrollments } from '../hooks/useCourseQuery';
-import { useAuthStore } from '../stores/authStore';
-import { useCourseStore } from '../stores/courseStore';
-import type { Schedule } from '../types';
+import { useCourseDetail, useEnrollCourse, useUnenrollCourse, useMyEnrollments } from '../../hooks/useCourseQuery';
+import { useAuthStore } from '../../stores/authStore';
+import { useCourseStore } from '../../stores/courseStore';
+import type { Schedule } from '../../types';
 import toast from 'react-hot-toast';
-import UnenrollModal from '../components/UnenrollModal';
+import UnenrollModal from '../../components/UnenrollModal';
 import { IoArrowForwardOutline } from "react-icons/io5";
 import { AxiosError } from 'axios';
 

@@ -2,10 +2,10 @@ import { useState, useMemo, useEffect } from "react";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import { useQuery } from "@tanstack/react-query";
-import { courseApi } from "../api/courseApi";
-import type { Course, Schedule } from "../types";
-import { useAuthStore } from "../stores/authStore";
-import { UserRole } from "../types";
+import { courseApi } from "../../api/courseApi";
+import type { Course, Schedule } from "../../types";
+import { useAuthStore } from "../../stores/authStore";
+import { UserRole } from "../../types";
 import { MdChevronLeft, MdChevronRight } from "react-icons/md";
 
 dayjs.extend(isoWeek);

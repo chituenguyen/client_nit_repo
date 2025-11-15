@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useQuery } from '@tanstack/react-query';
-import { assignmentApi } from '../api/assignmentApi';
-import type { Assignment } from '../types';
+import { assignmentApi } from '../../api/assignmentApi';
+import type { Assignment } from '../../types';
 
 type AssignmentFormData = {
   title: string;

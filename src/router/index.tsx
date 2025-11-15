@@ -8,18 +8,21 @@ import RoleBasedRoute from '../components/RoleBasedRoute';
 import { UserRole } from '../types';
 import RoleRedirect from '../components/RoleRedirect';
 
-// Import các pages
-import CoursePage from '../pages/coursePage';
-import CourseDetail from '../pages/CourseDetail';
-import CalendarPage from '../pages/calendarPage';
-import AssignmentPage from '../pages/assignmentPage';
-import BlogPage from '../pages/blogPage';
+// Import các pages cho Student
+import CoursePage from '../pages/Student/StudentCoursePage';
+import CourseDetail from '../pages/Student/StudentCourseDetail';
+import CalendarPage from '../pages/Student/StudentCalendarPage';
+import AssignmentPage from '../pages/Student/StudentAssignmentPage';
+import BlogPage from '../pages/Student/StudentBlogPage';
+
+// Import các pages cho Lecturer
 import LecturerApp from '../LecturerApp';
-import LecturerCoursesPage from '../pages/LecturerCoursesPage';
-import CalendarPageLecturer from '../pages/calendarPageLecturer';
-import CreateCoursePage from '../pages/CreateCoursePage';
-import CreateAssignmentPage from '../pages/CreateAssignmentPage';
-import AssignmentDetailPage from '../pages/AssignmentDetailPage';
+import LecturerCoursesPage from '../pages/Lecturer/LecturerCoursesPage';
+import CalendarPageLecturer from '../pages/Lecturer/LecturerCalendarPage';
+import CreateCoursePage from '../pages/Lecturer/CreateCoursePage';
+import CreateAssignmentPage from '../pages/Lecturer/CreateAssignmentPage';
+import LecturerAssignmentPage from '../pages/Lecturer/LecturerAssignmentPage';
+import AssignmentDetailPage from '../pages/Lecturer/AssignmentDetailPage';
 
 
 const router = createBrowserRouter([
@@ -55,7 +58,6 @@ const router = createBrowserRouter([
       { path: '', element: <Navigate to="/student/courses" replace /> },
       { path: 'courses', element: <CoursePage /> },
       { path: 'courses/:id', element: <CourseDetail /> },
-      // ✅ Route mới cho assignments của course cụ thể
       { path: 'courses/:id/assignments', element: <AssignmentPage /> },
       { path: 'calendar', element: <CalendarPage /> },
       { path: 'blog', element: <BlogPage /> },
@@ -78,7 +80,7 @@ const router = createBrowserRouter([
       { path: 'courses/create', element: <CreateCoursePage /> },
       { path: 'courses/:courseId/edit', element: <CreateCoursePage /> },
       { path: 'courses/:courseId/assignments/create', element: <CreateAssignmentPage /> },
-      { path: 'assignment', element: <AssignmentPage /> },
+      { path: 'assignment', element: <LecturerAssignmentPage /> },
       { path: 'assignment/:assignmentId', element: <AssignmentDetailPage /> },
       { path: 'calendar', element: <CalendarPageLecturer /> },
       { path: 'students', element: <div>Quản lý học viên</div> },

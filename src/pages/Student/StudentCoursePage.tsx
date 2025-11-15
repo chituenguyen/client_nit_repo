@@ -8,11 +8,11 @@ import { PiUsersThreeFill } from 'react-icons/pi';
 import { FaClock } from "react-icons/fa";
 import { FaCalendarAlt } from "react-icons/fa";
 import { GrSchedules } from "react-icons/gr";
-import { useMyEnrollments } from '../hooks/useCourseQuery';
-import { useCourseStore } from '../stores/courseStore';
-import { useAuthStore } from '../stores/authStore';
-import { courseApi } from '../api/courseApi';
-import type { Course } from '../types';
+import { useMyEnrollments } from '../../hooks/useCourseQuery';
+import { useCourseStore } from '../../stores/courseStore';
+import { useAuthStore } from '../../stores/authStore';
+import { courseApi } from '../../api/courseApi';
+import type { Course } from '../../types';
 import { AxiosError } from 'axios';
 
 interface FetchCoursesResult {

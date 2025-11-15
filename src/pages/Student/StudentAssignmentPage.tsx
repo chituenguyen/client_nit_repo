@@ -5,15 +5,15 @@ import { AiOutlineLoading3Quarters } from 'react-icons/ai';
 import { BiErrorCircle } from 'react-icons/bi';
 import { MdAssignment, MdClose } from 'react-icons/md';
 import { FaCalendarAlt, FaArrowLeft, FaDownload, FaFile, FaCheckCircle } from 'react-icons/fa';
-import { useAssignmentsByCourse } from '../hooks/useAssignmentQuery';
-import { useCourseDetail } from '../hooks/useCourseQuery';
-import { useAssignmentStore } from '../stores/assignmentStore';
-import { useAllMySubmissions } from '../hooks/useAssignmentQuery';
+import { useAssignmentsByCourse } from '../../hooks/useAssignmentQuery';
+import { useCourseDetail } from '../../hooks/useCourseQuery';
+import { useAssignmentStore } from '../../stores/assignmentStore';
+import { useAllMySubmissions } from '../../hooks/useAssignmentQuery';
 import { IoIosWarning } from 'react-icons/io';
 import { FaFire } from 'react-icons/fa';
-import type { Assignment } from '../types';
+import type { Assignment } from '../../types';
 import { createPortal } from 'react-dom';
-import SubmissionModal from '../components/SubmissionModal';
+import SubmissionModal from '../../components/SubmissionModal';
 
 // ==================== FILE PREVIEW MODAL ====================
 interface FilePreviewModalProps {
