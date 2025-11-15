@@ -1,12 +1,27 @@
-import { authApi, type StudentRegisterData, type LecturerRegisterData } from './api';
+import { authApi, type StudentRegisterData, type LecturerRegisterData, type LoginResponse } from './api';
 import { type User, normalizeRole } from '../util/authUtils';
 
+// Helper function to normalize user from API response
+const normalizeUser = (apiUser: LoginResponse['user']): User => {
+  return {
+    id: String(apiUser.id),
+    email: apiUser.email,
+    full_name: apiUser.fullName,
+    avatar: apiUser.avatarUrl || `https://i.pravatar.cc/150?u=${apiUser.email}`,
+    role: normalizeRole(apiUser.role),
+    phone: apiUser.phone || undefined,
+    createdAt: apiUser.createdAt,
+    updatedAt: apiUser.updatedAt,
+    studentId: apiUser.student?.id,
+    lecturerId: apiUser.lecturer?.id,
+  };
+};
+
 // === LOGIN ===
-export const loginService = async (email: string, password: string) => {
+export const loginService = async (email: string, password: string): Promise<User> => {
   const res = await authApi.login(email, password);
+  const { user, accessToken, refreshToken, token } = res.data;
   
-  // API trả về accessToken thay vì token
-  const { user, accessToken, token } = res.data;
   const authToken = accessToken || token;
   
   if (!authToken) {
@@ -17,92 +32,85 @@ export const loginService = async (email: string, password: string) => {
     throw new Error('User not found in response');
   }
 
-  const normalized: User = {
-    id: String(user.id),
-    email: user.email,
-    full_name: user.fullName || user.full_name || '',
-    avatar: user.avatar || `https://i.pravatar.cc/150?u=${user.email}`,
-    role: normalizeRole(user.role),
-    phone: user.phone,
-    createdAt: user.createdAt || new Date().toISOString(),
-    updatedAt: user.updatedAt
-  };
+  const normalized = normalizeUser(user);
 
+  // Lưu cả accessToken và refreshToken
   localStorage.setItem('token', authToken);
+  if (refreshToken) {
+    localStorage.setItem('refreshToken', refreshToken);
+  }
   localStorage.setItem('user', JSON.stringify({ id: normalized.id, role: normalized.role }));
 
   return normalized;
 };
 
 // === LOGOUT ===
-export const logoutService = async () => {
-  // Try calling server logout if available, but don't fail if the endpoint doesn't exist
+export const logoutService = async (): Promise<void> => {
   try {
-    if (authApi.logout) {
-      await authApi.logout();
-    }
+    await authApi.logout();
   } catch (err) {
-    // Log and continue — even if server logout fails, we'll clear local state
     console.warn('Logout API call failed:', err);
   } finally {
     localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
   }
-
 };
 
 // === GET CURRENT USER ===
-export const getCurrentUserService = async () => {
+export const getCurrentUserService = async (): Promise<User> => {
   const res = await authApi.getCurrentUser();
-  const user = res.data;
-
-  const normalized: User = {
-    id: String(user.id),
-    email: user.email,
-    full_name: user.fullName || user.full_name || '',
-    avatar: user.avatar || `https://i.pravatar.cc/150?u=${user.email}`,
-    role: normalizeRole(user.role),
-    phone: user.phone,
-    createdAt: user.createdAt || new Date().toISOString(),
-    updatedAt: user.updatedAt
-  };
-
-  return normalized;
+  return normalizeUser(res.data);
 };
 
 // === REGISTER ===
 export const registerService = async (
   role: 'student' | 'lecturer',
   data: StudentRegisterData | LecturerRegisterData
-) => {
-  let res;
-  if (role === 'student') {
-    res = await authApi.registerStudent(data as StudentRegisterData);
-  } else {
-    res = await authApi.registerLecturer(data as LecturerRegisterData);
-  }
+): Promise<User> => {
+  const res = role === 'student' 
+    ? await authApi.registerStudent(data as StudentRegisterData)
+    : await authApi.registerLecturer(data as LecturerRegisterData);
 
-  // API trả về accessToken thay vì token
-  const { user, accessToken, token } = res.data;
+  const { user, accessToken, refreshToken, token } = res.data;
   const authToken = accessToken || token;
   
   if (!authToken || !user) {
     throw new Error('Invalid register response');
   }
 
-  const normalized: User = {
-    id: String(user.id),
-    email: user.email,
-    full_name: user.fullName || user.full_name || '',
-    avatar: user.avatar || `https://i.pravatar.cc/150?u=${user.email}`,
-    role: normalizeRole(user.role),
-    phone: user.phone,
-    createdAt: user.createdAt || new Date().toISOString(),
-    updatedAt: user.updatedAt
-  };
+  const normalized = normalizeUser(user);
 
+  // Lưu cả accessToken và refreshToken
   localStorage.setItem('token', authToken);
+  if (refreshToken) {
+    localStorage.setItem('refreshToken', refreshToken);
+  }
   localStorage.setItem('user', JSON.stringify({ id: normalized.id, role: normalized.role }));
 
   return normalized;
+};
+
+// === REFRESH TOKEN ===
+export const refreshTokenService = async (): Promise<string> => {
+  const refreshToken = localStorage.getItem('refreshToken');
+  
+  if (!refreshToken) {
+    throw new Error('No refresh token available');
+  }
+
+  const res = await authApi.refreshToken(refreshToken);
+  const { accessToken, refreshToken: newRefreshToken } = res.data;
+
+  if (!accessToken) {
+    throw new Error('Invalid refresh response');
+  }
+
+  // Cập nhật token mới
+  localStorage.setItem('token', accessToken);
+  if (newRefreshToken) {
+    localStorage.setItem('refreshToken', newRefreshToken);
+  }
+
+  return accessToken;
 };

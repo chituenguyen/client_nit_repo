@@ -1,6 +1,6 @@
-import React from 'react';
 import { BiErrorCircle } from 'react-icons/bi';
 import { AiOutlineLoading3Quarters } from 'react-icons/ai';
+import { createPortal } from "react-dom";
 
 interface UnenrollModalProps {
   isOpen: boolean;
@@ -21,7 +21,7 @@ export default function UnenrollModal({
 }: UnenrollModalProps) {
   if (!isOpen) return null;
 
-  return (
+  return createPortal (
     <div 
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
       onClick={onClose}
@@ -91,6 +91,7 @@ export default function UnenrollModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

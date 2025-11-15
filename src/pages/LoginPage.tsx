@@ -20,35 +20,35 @@ export default function LoginPage() {
   const locationState = location.state as LocationState | null;
   const from = locationState?.from?.pathname || '/';
 
+  // FIX 1: Chỉ check token khi mount lần đầu, không check lại khi login
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    
-    if (token) {
-      navigate(from, { replace: true });
+    // Chỉ redirect nếu đã có token VÀ không đang trong quá trình login
+    if (!loginMutation.isPending && !loginMutation.isSuccess) {
+      const token = localStorage.getItem('token');
+      if (token) {
+        navigate(from, { replace: true });
+      }
     }
-  }, [from, navigate]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); 
 
   const onSubmit = async (data: LoginFormData) => {
     try {
-      await loginMutation.mutateAsync({
+      const user = await loginMutation.mutateAsync({
         email: data.email,
         password: data.password,
       });
-
-      const savedToken = localStorage.getItem('token');
-
-      if (!savedToken) {
-        toast.error('Lỗi lưu token, vui lòng thử lại');
+      if (!user) {
+        toast.error('Đăng nhập thất bại, vui lòng thử lại');
         return;
       }
 
       toast.success('Đăng nhập thành công!');
       
-      setTimeout(() => {
-        navigate(from, { replace: true });
-      }, 100);
+      navigate(from, { replace: true });
 
     } catch (err) {
+      console.error('Login error:', err);
       const error = err as AxiosError<{ message?: string }>;
       const errorMessage =
         error?.response?.data?.message || 'Đăng nhập thất bại';
@@ -182,10 +182,10 @@ export default function LoginPage() {
               Tài khoản demo:
             </p>
             <p className="text-xs text-secondary mb-1">
-              Student: student@example.com / student123
+              Student: student@elearning.com / password123
             </p>
             <p className="text-xs text-secondary">
-              Mentor: mentor@example.com / mentor123
+              Lecturer: lecturer@elearning.com / password123
             </p>
           </div>
 

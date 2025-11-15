@@ -24,18 +24,20 @@ export const useAuthStore = create<AuthStore>((set) => ({
     }
   },
   checkAuth: async () => {
-  const token = localStorage.getItem('token');
-  if (!token) return null; 
+    const token = localStorage.getItem('token');
+    if (!token) return null; 
 
-  try {
-    const user = await getCurrentUserService();
-    set({ user });
-    return user;
-  } catch (error) {
-    console.error('Auth check failed:', error);
-    localStorage.removeItem('token');
-    return null;
-  }
-},
-
+    try {
+      const user = await getCurrentUserService();
+      set({ user });
+      return user;
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      // Xóa cả refreshToken khi check auth thất bại
+      localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
+      return null;
+    }
+  },
 }));

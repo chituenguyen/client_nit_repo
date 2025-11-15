@@ -10,7 +10,7 @@
 
   /* Semantic */
   --color-normal: rgb(59 130 246);
-  --color-success: #00ff7f;
+  --color-success: rgb(21 128 61);
   --color-danger:  rgb(239 68 68);
   --color-warning: rgb(234 179 8);
   --color-info: #a0a0a0;
@@ -31,7 +31,7 @@ html.dark {
   --color-component: #a0a0a0;
 
   --color-normal: #3b82f6;
-  --color-success: #00ff7f;
+  --color-success: #00b65b;
   --color-danger: #ff4c4c;
   --color-warning: #ffd700;
   --color-info: #a0a0a0;

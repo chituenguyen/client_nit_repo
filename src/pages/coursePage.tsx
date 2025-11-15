@@ -11,7 +11,8 @@ import { GrSchedules } from "react-icons/gr";
 import { useMyEnrollments } from '../hooks/useCourseQuery';
 import { useCourseStore } from '../stores/courseStore';
 import { useAuthStore } from '../stores/authStore';
-import { courseApi, type Course } from '../api/courseApi';
+import { courseApi } from '../api/courseApi';
+import type { Course } from '../types';
 import { AxiosError } from 'axios';
 
 interface FetchCoursesResult {

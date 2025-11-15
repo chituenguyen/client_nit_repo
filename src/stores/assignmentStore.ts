@@ -1,18 +1,20 @@
 // src/stores/assignmentStore.ts
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import { type Assignment } from '../api/assignmentApi';
+import { type Assignment, type Submission } from '../api/assignmentApi';
 
 interface AssignmentStore {
   // State
   assignments: Assignment[];
   selectedAssignment: Assignment | null;
+  mySubmission: Submission | null;
   isLoading: boolean;
   error: string | null;
 
   // Actions
   setAssignments: (assignments: Assignment[]) => void;
   setSelectedAssignment: (assignment: Assignment | null) => void;
+  setMySubmission: (submission: Submission | null) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   reset: () => void;
@@ -37,7 +39,15 @@ export const useAssignmentStore = create<AssignmentStore>()(
 
       // Set assignment được chọn
       setSelectedAssignment: (assignment) =>
-        set({ selectedAssignment: assignment }, false, 'setSelectedAssignment'),
+        set(
+          { selectedAssignment: assignment, mySubmission: null }, // Reset bài nộp khi chọn assignment khác
+          false,
+          'setSelectedAssignment'
+        ),
+
+      // (MỚI) Set bài nộp của tôi
+      setMySubmission: (submission) =>
+        set({ mySubmission: submission }, false, 'setMySubmission'),
 
       // Set loading state
       setLoading: (isLoading) =>
@@ -62,5 +72,6 @@ export const useAssignmentStore = create<AssignmentStore>()(
 // Selectors để dễ dàng lấy state
 export const selectAssignments = (state: AssignmentStore) => state.assignments;
 export const selectSelectedAssignment = (state: AssignmentStore) => state.selectedAssignment;
+export const selectMySubmission = (state: AssignmentStore) => state.mySubmission;
 export const selectIsLoading = (state: AssignmentStore) => state.isLoading;
 export const selectError = (state: AssignmentStore) => state.error;

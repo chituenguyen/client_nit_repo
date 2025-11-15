@@ -5,12 +5,29 @@ import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 import { BiErrorCircle } from "react-icons/bi";
+import { MdAssignment } from "react-icons/md";
+import { FaCheckCircle } from "react-icons/fa";
 import { useMyEnrollments } from "../hooks/useCourseQuery";
-import type { Enrollment, CalendarView } from "../types";
+import { useQuery } from "@tanstack/react-query";
+import assignmentApi from "../api/assignmentApi";
+import { useAllMySubmissions } from "../hooks/useAssignmentQuery";
+import type { CalendarView } from "../types";
+import type { Assignment } from "../api/assignmentApi";
 
 dayjs.extend(isoWeek);
 dayjs.extend(isSameOrBefore);
 dayjs.extend(isSameOrAfter);
+
+interface CalendarTask {
+  id: string;
+  title: string;
+  room?: string;
+  startTime: string;
+  endTime: string;
+  type: 'schedule' | 'assignment';
+  courseCode?: string;
+  isSubmitted?: boolean; // Thêm field này
+}
 
 export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(dayjs());
@@ -86,9 +103,9 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
       const startOfWeek = currentDate.startOf("isoWeek");
       const endOfWeek = startOfWeek.add(6, "day");
       if (startOfWeek.month() !== endOfWeek.month()) {
-        return `${startOfWeek.format("D MMM")} – ${endOfWeek.format("D MMM, YYYY")}`;
+        return `${startOfWeek.format("D MMM")} — ${endOfWeek.format("D MMM, YYYY")}`;
       }
-      return `${startOfWeek.format("D")} – ${endOfWeek.format("D, MMM YYYY")}`;
+      return `${startOfWeek.format("D")} — ${endOfWeek.format("D, MMM YYYY")}`;
     }
     return currentDate.format("D MMMM, YYYY");
   }, [currentDate, view]);
@@ -143,9 +160,44 @@ const CalendarGrid: React.FC<CalendarDateProps> = ({ currentDate, view }) => {
 
   const { 
     data: enrollments, 
-    isLoading, 
-    error 
+    isLoading: enrollmentsLoading, 
+    error: enrollmentsError 
   } = useMyEnrollments('ENROLLED');
+
+  // Lấy tất cả submissions
+  const { data: allSubmissions } = useAllMySubmissions();
+
+  // Lấy tất cả assignments từ các courses đã enroll
+  const enrolledCourseIds = useMemo(() => {
+    if (!enrollments) return [];
+    return enrollments.map(e => e.schedule.course.id);
+  }, [enrollments]);
+
+  const { data: allAssignments, isLoading: assignmentsLoading } = useQuery({
+    queryKey: ['calendar-assignments', enrolledCourseIds],
+    queryFn: async () => {
+      if (enrolledCourseIds.length === 0) return [];
+      
+      const assignmentsPromises = enrolledCourseIds.map(courseId =>
+        assignmentApi.getAssignmentsByCourse(courseId)
+          .then(res => ({
+            courseId,
+            assignments: Array.isArray(res.data?.data) ? res.data.data : []
+          }))
+          .catch(() => ({ courseId, assignments: [] }))
+      );
+
+      const results = await Promise.all(assignmentsPromises);
+      return results.flatMap(r => 
+        r.assignments.map((a: Assignment) => ({
+          ...a,
+          courseId: r.courseId
+        }))
+      );
+    },
+    enabled: enrolledCourseIds.length > 0,
+    staleTime: 2 * 60 * 1000,
+  });
 
   const daysToDisplay = useMemo(() => {
     if (view === "Week") {
@@ -156,110 +208,146 @@ const CalendarGrid: React.FC<CalendarDateProps> = ({ currentDate, view }) => {
   }, [currentDate, view]);
 
   const hours = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, "0")}:00`);
-  
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const dayMap: { [key: string]: number } = {
-    MONDAY: 1,
-    TUESDAY: 2,
-    WEDNESDAY: 3,
-    THURSDAY: 4,
-    FRIDAY: 5,
-    SATURDAY: 6,
-    SUNDAY: 7,
-  };
 
   const tasks = useMemo(() => {
-    if (!enrollments) return [];
+    const dayMap: { [key: string]: number } = {
+      MONDAY: 1,
+      TUESDAY: 2,
+      WEDNESDAY: 3,
+      THURSDAY: 4,
+      FRIDAY: 5,
+      SATURDAY: 6,
+      SUNDAY: 7,
+    };
 
-    const startOfWeek = currentDate.startOf("isoWeek");
+    const scheduleTasks: CalendarTask[] = [];
+    const assignmentTasks: CalendarTask[] = [];
 
-    if (view === 'Week') {
-      return (enrollments as Enrollment[]).reduce((acc, enroll) => {
-        const { schedule } = enroll;
-        const { course } = schedule;
+    // Schedule tasks (code cũ)
+    if (enrollments) {
+      const startOfWeek = currentDate.startOf("isoWeek");
 
-        if (!schedule.startDate || !schedule.endDate) {
-          return acc;
-        }
-        
-        const courseStart = dayjs(schedule.startDate);
-        const courseEnd = dayjs(schedule.endDate);
+      if (view === 'Week') {
+        enrollments.forEach(enroll => {
+          const { schedule } = enroll;
+          const { course } = schedule;
 
-        const dayIndex = dayMap[schedule.dayOfWeek.toUpperCase()] || 1;
-        const scheduleDate = startOfWeek.isoWeekday(dayIndex);
+          if (!schedule.startDate || !schedule.endDate) return;
+          
+          const courseStart = dayjs(schedule.startDate);
+          const courseEnd = dayjs(schedule.endDate);
 
-        const isWithinRange = 
-          scheduleDate.isSameOrAfter(courseStart, 'day') &&
-          scheduleDate.isSameOrBefore(courseEnd, 'day');
+          const dayIndex = dayMap[schedule.dayOfWeek.toUpperCase()] || 1;
+          const scheduleDate = startOfWeek.isoWeekday(dayIndex);
 
-        if (isWithinRange) {
-          const [startHour, startMin] = schedule.startTime.split(':').map(Number);
-          const [endHour, endMin] = schedule.endTime.split(':').map(Number);
+          const isWithinRange = 
+            scheduleDate.isSameOrAfter(courseStart, 'day') &&
+            scheduleDate.isSameOrBefore(courseEnd, 'day');
 
-          const startTimeIso = scheduleDate.hour(startHour).minute(startMin).second(0).toISOString();
-          const endTimeIso = scheduleDate.hour(endHour).minute(endMin).second(0).toISOString();
+          if (isWithinRange) {
+            const [startHour, startMin] = schedule.startTime.split(':').map(Number);
+            const [endHour, endMin] = schedule.endTime.split(':').map(Number);
 
-          acc.push({
-            id: enroll.id,
-            title: course.courseName,
-            room: schedule.room,
-            startTime: startTimeIso,
-            endTime: endTimeIso,
+            const startTimeIso = scheduleDate.hour(startHour).minute(startMin).second(0).toISOString();
+            const endTimeIso = scheduleDate.hour(endHour).minute(endMin).second(0).toISOString();
+
+            scheduleTasks.push({
+              id: `schedule-${enroll.id}`,
+              title: course.courseName,
+              room: schedule.room,
+              startTime: startTimeIso,
+              endTime: endTimeIso,
+              type: 'schedule',
+              courseCode: course.courseCode,
+            });
+          }
+        });
+      } else {
+        const currentDayOfWeek = currentDate.isoWeekday();
+        const currentDayString = Object.keys(dayMap).find(key => dayMap[key] === currentDayOfWeek);
+
+        enrollments
+          .filter(enroll => {
+            const { schedule } = enroll;
+            const isCorrectDay = schedule.dayOfWeek.toUpperCase() === currentDayString;
+            if (!isCorrectDay) return false;
+
+            if (!schedule.startDate || !schedule.endDate) return false;
+            
+            const courseStart = dayjs(schedule.startDate);
+            const courseEnd = dayjs(schedule.endDate);
+
+            return currentDate.isSameOrAfter(courseStart, 'day') &&
+                   currentDate.isSameOrBefore(courseEnd, 'day');
+          })
+          .forEach(enroll => {
+            const { schedule } = enroll;
+            const { course } = schedule;
+            
+            const [startHour, startMin] = schedule.startTime.split(':').map(Number);
+            const [endHour, endMin] = schedule.endTime.split(':').map(Number);
+            
+            const startTimeIso = currentDate.hour(startHour).minute(startMin).second(0).toISOString();
+            const endTimeIso = currentDate.hour(endHour).minute(endMin).second(0).toISOString();
+            
+            scheduleTasks.push({
+              id: `schedule-${enroll.id}`,
+              title: course.courseName,
+              room: schedule.room,
+              startTime: startTimeIso,
+              endTime: endTimeIso,
+              type: 'schedule',
+              courseCode: course.courseCode,
+            });
           });
-        }
-        
-        return acc;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      }, [] as any[]);
+      }
     }
 
-    const currentDayOfWeek = currentDate.isoWeekday();
-    const currentDayString = Object.keys(dayMap).find(key => dayMap[key] === currentDayOfWeek);
-
-    return (enrollments as Enrollment[])
-      .filter(enroll => {
-        const { schedule } = enroll;
+    // Assignment tasks (CẢI TIẾN: check submitted status)
+    if (allAssignments && allAssignments.length > 0) {
+      allAssignments.forEach((assignment: Assignment & { courseId: string }) => {
+        const dueDate = dayjs(assignment.dueDate);
         
-        const isCorrectDay = schedule.dayOfWeek.toUpperCase() === currentDayString;
-        if (!isCorrectDay) return false;
+        const isInRange = view === 'Week'
+          ? dueDate.isSameOrAfter(currentDate.startOf('isoWeek')) &&
+            dueDate.isSameOrBefore(currentDate.startOf('isoWeek').add(6, 'day'))
+          : dueDate.isSame(currentDate, 'day');
 
-        if (!schedule.startDate || !schedule.endDate) {
-          return false;
+        if (isInRange) {
+          const enrollment = enrollments?.find(e => e.schedule.course.id === assignment.courseId);
+          const courseCode = enrollment?.schedule.course.courseCode;
+
+          // ✅ CHECK XEM ĐÃ NỘP CHƯA
+          const isSubmitted = allSubmissions?.some(
+            sub => sub.assignmentId === assignment.id
+          );
+
+          const startTimeIso = dueDate.hour(23).minute(30).second(0).toISOString();
+          const endTimeIso = dueDate.hour(23).minute(59).second(0).toISOString();
+
+          assignmentTasks.push({
+            id: `assignment-${assignment.id}`,
+            title: `📝 ${assignment.title}`,
+            startTime: startTimeIso,
+            endTime: endTimeIso,
+            type: 'assignment',
+            courseCode: courseCode,
+            isSubmitted: isSubmitted, // ✅ THÊM FIELD NÀY
+          });
         }
-        const courseStart = dayjs(schedule.startDate);
-        const courseEnd = dayjs(schedule.endDate);
-
-        const isWithinRange = 
-          currentDate.isSameOrAfter(courseStart, 'day') &&
-          currentDate.isSameOrBefore(courseEnd, 'day');
-
-        return isWithinRange;
-      })
-      .map((enroll) => {
-        const { schedule } = enroll;
-        const { course } = schedule;
-        
-        const [startHour, startMin] = schedule.startTime.split(':').map(Number);
-        const [endHour, endMin] = schedule.endTime.split(':').map(Number);
-        
-        const startTimeIso = currentDate.hour(startHour).minute(startMin).second(0).toISOString();
-        const endTimeIso = currentDate.hour(endHour).minute(endMin).second(0).toISOString();
-        
-        return {
-          id: enroll.id,
-          title: course.courseName,
-          room: schedule.room,
-          startTime: startTimeIso,
-          endTime: endTimeIso,
-        };
       });
+    }
 
-  }, [enrollments, currentDate, view, dayMap]); 
+    return [...scheduleTasks, ...assignmentTasks];
+  }, [enrollments, allAssignments, allSubmissions, currentDate, view]);
 
   const currentMinutes = now.hour() * 60 + now.minute();
   const isVisibleWeek = view === 'Week' && now.isAfter(currentDate.startOf('isoWeek')) && now.isBefore(currentDate.startOf('isoWeek').add(7, 'day'));
   const isVisibleDay = view === 'Day' && currentDate.isSame(now, 'day');
   
+  const isLoading = enrollmentsLoading || assignmentsLoading;
+  const error = enrollmentsError;
+
   if (isLoading) {
     return (
       <div className="flex-1 flex justify-center items-center bg-background rounded-md shadow-lg">
@@ -332,10 +420,35 @@ const CalendarGrid: React.FC<CalendarDateProps> = ({ currentDate, view }) => {
                   const duration = end.diff(start, "minute");
                   const height = Math.max(duration, 45);
 
+                  const isAssignment = task.type === 'assignment';
+                  const isSubmitted = task.isSubmitted;
+
+                  // ✅ XÁC ĐỊNH MÀU DỰA TRÊN TRẠNG THÁI
+                  const getTaskColors = () => {
+                    if (isAssignment) {
+                      if (isSubmitted) {
+                        return {
+                          bg: 'var(--color-success-light)',
+                          border: 'var(--color-success)',
+                        };
+                      }
+                      return {
+                        bg: 'var(--color-warning)',
+                        border: 'var(--color-danger)',
+                      };
+                    }
+                    return {
+                      bg: 'var(--color-background)',
+                      border: 'var(--color-normal)',
+                    };
+                  };
+
+                  const colors = getTaskColors();
+
                   return (
                     <div
                       key={task.id}
-                      className={`absolute left-1 right-1 bg-background rounded p-2 text-sm overflow-hidden flex flex-col transition-all ${
+                      className={`absolute left-1 right-1 rounded p-2 text-sm overflow-hidden flex flex-col transition-all ${
                         isToday 
                           ? 'shadow-xl border-2' 
                           : 'shadow-lg'
@@ -343,16 +456,44 @@ const CalendarGrid: React.FC<CalendarDateProps> = ({ currentDate, view }) => {
                       style={{ 
                         top: `${top}px`, 
                         height: `${height}px`,
-                        borderLeft: '4px solid var(--color-normal)',
+                        backgroundColor: colors.bg,
+                        borderLeft: `4px solid ${colors.border}`,
                         opacity: isToday ? 1 : 0.5,
                       }}
                     >
-                      <div className="font-semibold line-clamp-2 text-main">{task.title}</div>
-                      <div className="text-xs font-medium mt-1 text-secondary">
-                        Phòng: {task.room}
+                      <div className="font-semibold line-clamp-2 text-main flex items-center gap-1">
+                        {isAssignment && (
+                          isSubmitted ? (
+                            <FaCheckCircle className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--color-success)' }} />
+                          ) : (
+                            <MdAssignment className="w-4 h-4 flex-shrink-0" />
+                          )
+                        )}
+                        {task.title}
                       </div>
-                      <div className="mt-auto text-secondary">
-                        {start.format("HH:mm")} – {end.format("HH:mm")}
+                      {task.courseCode && (
+                        <div className="text-xs font-medium text-secondary">
+                          {task.courseCode}
+                        </div>
+                      )}
+                      {task.room && (
+                        <div className="text-xs font-medium mt-1 text-secondary">
+                          Phòng: {task.room}
+                        </div>
+                      )}
+                      <div className="mt-auto text-secondary flex items-center gap-1">
+                        {isAssignment ? (
+                          <>
+                            ⏰ Deadline
+                            {isSubmitted && (
+                              <span className="text-xs" style={{ color: 'var(--color-success)' }}>
+                                (Đã nộp)
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          `${start.format("HH:mm")} — ${end.format("HH:mm")}`
+                        )}
                       </div>
                     </div>
                   );
@@ -418,4 +559,4 @@ const CalendarGrid: React.FC<CalendarDateProps> = ({ currentDate, view }) => {
       </div>
     </div>
   );
-}
+};

@@ -221,7 +221,6 @@ export default function CourseDetailPage() {
 
         {/* Assignments */}
         <div 
-          onClick={() => navigate(`/student/courses/${course.id}/assignments`)}
           className="bg-background rounded-lg overflow-hidden shadow-md hover:shadow-lg flex items-center justify-between cursor-pointer transition-all group"
         >
           <div className='p-4 flex items-center'>
@@ -233,9 +232,13 @@ export default function CourseDetailPage() {
               <p className="font-medium text-main">{course._count.assignments ?? 0}</p>
             </article>
           </div>
-          <div className='bg-primary text-primary h-full flex items-center justify-center px-4 scale-x-0 origin-right group-hover:scale-x-100 transition-transform'>
+          <button
+            type='button' 
+            onClick={() => navigate(`/student/courses/${course.id}/assignments`)}
+            className='bg-primary text-primary h-full flex items-center justify-center px-4 scale-x-0 origin-right group-hover:scale-x-100 transition-transform'
+          >
             <IoArrowForwardOutline className='w-5 h-5'/>
-          </div>
+          </button>
         </div>
 
         {/* Lessons */}  
@@ -249,9 +252,12 @@ export default function CourseDetailPage() {
               <p className="font-medium text-main">{course._count.lectureMaterials ?? 0}</p>
             </article>
           </div>
-          <div className='bg-primary text-primary h-full flex items-center justify-center px-4 scale-x-0 origin-right group-hover:scale-x-100 transition-transform'>
+          <button 
+            type='button' 
+            className='bg-primary text-primary h-full flex items-center justify-center px-4 scale-x-0 origin-right group-hover:scale-x-100 transition-transform'
+          >
             <IoArrowForwardOutline className='w-5 h-5'/>
-          </div>
+          </button>
         </div>
       </section>
 
