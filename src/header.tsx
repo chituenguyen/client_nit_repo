@@ -1,9 +1,11 @@
 import { Link } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from 'react-router-dom';
 import { UserRole } from './types';
 import { useLogout } from "./hooks/useAuthQuery";
 import { useAuthStore } from './stores/authStore';
+import { useConversations } from './hooks/useChatQuery';
+import { useChatStore } from './stores/chatStore';
 
 interface HeaderProps {
   currentPage: string;
@@ -16,9 +18,23 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
   const logoutMutation = useLogout();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isDark, setIsDark] = useState(false);
+  const [showChatModal, setShowChatModal] = useState(false);
+  
+  // Load conversations từ API (dùng new chat system)
+  const { data: conversationsData } = useConversations();
+  const conversations = conversationsData || [];
+  const setSelectedUserId = useChatStore(state => state.setSelectedUserId);
+  
+  // Tính tổng số tin nhắn chưa đọc
+  const unreadMessages = useMemo(() => {
+    return conversations.reduce((total, conv) => total + (conv.unreadCount || 0), 0);
+  }, [conversations]);
 
   const isLecturer = user?.role === 'lecturer';
   const baseUrl = isLecturer ? '/lecturer' : '/student';
+  
+  // Default avatar
+  const DEFAULT_AVATAR = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="gray"%3E%3Cpath d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/%3E%3C/svg%3E';
 
   const handleLogout = async () => {
     try {
@@ -29,6 +45,12 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
       console.error('Logout error:', error);
       navigate('/login');
     }
+  };
+
+  const handleConversationClick = (userId: string) => {
+    setSelectedUserId(userId);
+    setShowChatModal(false);
+    navigate(`${baseUrl}/chat`);
   };
 
   const navItems = user?.role === UserRole.LECTURER 
@@ -121,6 +143,23 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
 
       {/* Right side buttons */}
       <div className="flex items-center gap-2 md:gap-4">
+        {/* Chat Button */}
+        <button
+          type="button"
+          onClick={() => setShowChatModal(!showChatModal)}
+          className="relative p-2 rounded-lg hover:bg-component transition-colors"
+          aria-label="Open chat"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" className="text-main md:w-6 md:h-6" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
+          </svg>
+          {unreadMessages > 0 && (
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+              {unreadMessages > 9 ? '9+' : unreadMessages}
+            </span>
+          )}
+        </button>
+
         {/* Dark/Light Mode Toggle Button */}
         <button
           type="button"
@@ -263,6 +302,104 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
           )}
         </div>
       </div>
+
+      {/* Chat Modal */}
+      {showChatModal && (
+        <>
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 z-50"
+            onClick={() => setShowChatModal(false)}
+          />
+          <div className="fixed right-4 top-20 w-96 max-w-[calc(100vw-2rem)] h-[600px] max-h-[calc(100vh-6rem)] bg-surface rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 flex flex-col overflow-hidden">
+            {/* Chat Header */}
+            <div className="flex items-center justify-between px-6 py-4 bg-primary">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24" className="text-primary">
+                    <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
+                  </svg>
+                </div>
+                <h3 className="font-bold text-primary text-lg">Tin nhắn</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowChatModal(false)}
+                className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+                aria-label="Close chat"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24" className="text-primary">
+                  <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/>
+                </svg>
+              </button>
+            </div>
+
+            {/* Chat List */}
+            <div className="flex-1 overflow-y-auto p-3 bg-background">
+              {conversations.length === 0 ? (
+                <div className="flex items-center justify-center h-32">
+                  <p className="text-secondary text-sm">Chưa có cuộc hội thoại nào</p>
+                </div>
+              ) : (
+                conversations.map((conversation) => {
+                  // Format time
+                  const lastMessageTime = conversation.lastMessage?.sentAt
+                    ? new Date(conversation.lastMessage.sentAt).toLocaleTimeString('vi-VN', { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                      })
+                    : '';
+                  
+                  return (
+                  <div
+                    key={conversation.user.id}
+                    onClick={() => handleConversationClick(conversation.user.id)}
+                    className="flex items-start gap-3 p-3 rounded-xl hover:bg-component cursor-pointer transition-all duration-200 mb-2 border border-transparent hover:border-gray-200 dark:hover:border-gray-700"
+                  >
+                    <div className="relative">
+                      <img
+                        src={conversation.user.avatarUrl || DEFAULT_AVATAR}
+                        alt={conversation.user.fullName}
+                        className="w-12 h-12 rounded-full object-cover ring-2 ring-gray-300 dark:ring-gray-600"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <h4 className="font-semibold text-sm text-main truncate">
+                          {conversation.user.fullName}
+                        </h4>
+                        <span className="text-xs text-secondary flex-shrink-0 ml-2">
+                          {lastMessageTime}
+                        </span>
+                      </div>
+                      <p className="text-sm text-secondary truncate mb-1">
+                        {conversation.lastMessage.isSentByMe && 'Bạn: '}
+                        {conversation.lastMessage.messageContent || 'Chưa có tin nhắn'}
+                      </p>
+                      {conversation.unreadCount > 0 && (
+                        <span className="inline-flex items-center justify-center px-2 py-0.5 bg-red-500 text-white text-xs font-semibold rounded-full">
+                          {conversation.unreadCount}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Chat Footer */}
+            <div className="px-4 py-3 bg-surface border-t border-gray-200 dark:border-gray-700">
+              <Link 
+                to={`${baseUrl}/chat`}
+                onClick={() => setShowChatModal(false)}
+                className="block w-full text-center py-3 bg-primary text-primary font-semibold rounded-lg hover:opacity-90 transition-all duration-200 shadow-md hover:shadow-lg"
+              >
+                Xem tất cả tin nhắn
+              </Link>
+            </div>
+          </div>
+        </>
+      )}
     </header>
   );
 }

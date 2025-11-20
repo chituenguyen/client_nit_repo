@@ -23,6 +23,8 @@ import CreateCoursePage from '../pages/Lecturer/CreateCoursePage';
 import CreateAssignmentPage from '../pages/Lecturer/CreateAssignmentPage';
 import LecturerAssignmentPage from '../pages/Lecturer/LecturerAssignmentPage';
 import AssignmentDetailPage from '../pages/Lecturer/AssignmentDetailPage';
+import LecturerChatPage from '../pages/Lecturer/LecturerChatPage';
+import LecturerMaterialsPage from '../pages/Lecturer/LecturerMaterialsPage';
 
 
 const router = createBrowserRouter([
@@ -82,9 +84,11 @@ const router = createBrowserRouter([
       { path: 'courses/:courseId/assignments/create', element: <CreateAssignmentPage /> },
       { path: 'assignment', element: <LecturerAssignmentPage /> },
       { path: 'assignment/:assignmentId', element: <AssignmentDetailPage /> },
+      { path: 'materials', element: <LecturerMaterialsPage /> },
       { path: 'calendar', element: <CalendarPageLecturer /> },
       { path: 'students', element: <div>Quản lý học viên</div> },
       { path: 'analytics', element: <div>Thống kê</div> },
+      { path: 'chat', element: <LecturerChatPage /> },
     ],
   },
 

@@ -14,8 +14,8 @@ export default function Sidebar({ currentPage, isOpen, onClose }: SidebarProps) 
     const baseUrl = user?.role === UserRole.LECTURER ? '/lecturer' : '/student';
 
     const navItems = user?.role === UserRole.LECTURER 
-  ? ['Courses', 'Students', 'Analytics']
-  : ['Courses', 'Calendar', 'Blog'];
+  ? ['Courses', 'Materials', 'Students', 'Analytics', 'Chat']
+  : ['Courses', 'Calendar', 'Blog', 'Chat'];
 
     return (
         <>
@@ -65,10 +65,12 @@ export default function Sidebar({ currentPage, isOpen, onClose }: SidebarProps) 
                             // Map icon theo tên
                             const iconMap: Record<string, React.ReactNode> = {
                                 'courses': <BookIcon />,
+                                'materials': <MaterialIcon />,
                                 'calendar': <LessonIcon />,
                                 'blog': <ChallengeIcon />,
                                 'students': <ProjectIcon />,
                                 'analytics': <AssessmentIcon />,
+                                'chat': <ChatIcon />,
                             };
 
                             return (
@@ -142,6 +144,22 @@ function ProjectIcon() {
     return (
         <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
             <path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-1 6h-3v3h-2v-3h-3v-2h3V7h2v3h3v2z"/>
+        </svg>
+    )
+}
+
+function ChatIcon() {
+    return (
+        <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
+        </svg>
+    )
+}
+
+function MaterialIcon() {
+    return (
+        <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 14H8v-2h5v2zm3-4H8v-2h8v2zm-2-6V3.5L18.5 8H14z"/>
         </svg>
     )
 }

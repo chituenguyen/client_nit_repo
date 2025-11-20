@@ -349,6 +349,63 @@ export const UserRole = {
     };
   }
   
+  // ==================== LECTURE MATERIAL TYPES ====================
+  
+  export interface LectureMaterial {
+    id: string;
+    title: string;
+    description?: string;
+    courseId: string;
+    lecturerId: string;
+    fileUrl: string;
+    fileType: string;
+    weekNumber?: number;
+    isPublic: boolean;
+    createdAt: string;
+    updatedAt: string;
+    course?: Course;
+    lecturer?: Lecturer;
+  }
+  
+  export interface CreateLectureMaterialData {
+    title: string;
+    description?: string;
+    courseId: string;
+    fileType: string;
+    weekNumber?: number;
+    isPublic?: boolean;
+    file: File; // File object for upload
+  }
+  
+  export interface UpdateLectureMaterialData {
+    title?: string;
+    description?: string;
+    fileType?: string;
+    weekNumber?: number;
+    isPublic?: boolean;
+    file?: File; // Optional file for update
+  }
+  
+  export interface LectureMaterialsParams {
+    courseId?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+    weekNumber?: number;
+  }
+  
+  export interface LectureMaterialsResponse {
+    success: boolean;
+    data: LectureMaterial[] | { items: LectureMaterial[]; total: number; page: number; limit: number };
+    message?: string;
+  }
+  
+  export interface LectureMaterialDetailResponse {
+    success: boolean;
+    data: LectureMaterial;
+    message?: string;
+  }
+  
   // Normalize role từ API
   export const normalizeRole = (apiRole: string | number | null | undefined): UserRole => {
     if (
@@ -362,3 +419,84 @@ export const UserRole = {
     }
     return UserRole.STUDENT;
   };
+
+
+  // ==================== CHAT TYPES ====================
+
+export interface ChatUser {
+  id: string;
+  email: string;
+  fullName: string;
+  avatarUrl: string | null;
+  role: 'STUDENT' | 'LECTURER';
+}
+
+export interface Chat {
+  id: string;
+  senderId: string;
+  receiverId: string;
+  messageContent: string;
+  isRead: boolean;
+  sentAt: string;
+  readAt: string | null;
+  sender: ChatUser;
+  receiver: ChatUser;
+}
+
+export interface ChatHistoryParams {
+  userId: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface ChatMeta {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface ChatHistoryResponse {
+  success: boolean;
+  data: {
+    data: Chat[];
+    otherUser: ChatUser;
+    meta: ChatMeta;
+  };
+  message?: string;
+}
+
+export interface SendChatPayload {
+  receiverId: string;
+  messageContent: string;
+}
+
+export interface SendChatResponse {
+  success: boolean;
+  data: Chat;
+  message?: string;
+}
+
+export interface ChatListUser {
+  user: {
+    id: string;
+    email: string;
+    fullName: string;
+    avatarUrl: string | null;
+    role: 'STUDENT' | 'LECTURER';
+  };
+  lastMessage: {
+    id: string;
+    messageContent: string;
+    sentAt: string;
+    isRead: boolean;
+    isSentByMe: boolean;
+  };
+  unreadCount: number;
+}
+
+export interface ChatConversationsResponse {
+  success: boolean;
+  data: ChatListUser[];
+  message?: string;
+}
