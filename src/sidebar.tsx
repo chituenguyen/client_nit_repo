@@ -14,7 +14,7 @@ export default function Sidebar({ currentPage, isOpen, onClose }: SidebarProps) 
     const baseUrl = user?.role === UserRole.LECTURER ? '/lecturer' : '/student';
 
     const navItems = user?.role === UserRole.LECTURER 
-  ? ['Courses', 'Materials', 'Students', 'Analytics', 'Chat']
+  ? ['Courses', 'Materials', 'Assignment', 'Chat']
   : ['Courses', 'Calendar', 'Blog', 'Chat'];
 
     return (

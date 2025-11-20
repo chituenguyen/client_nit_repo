@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
 import { UserRole } from './types';
 import { useLogout } from "./hooks/useAuthQuery";
@@ -25,10 +25,8 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
   const conversations = conversationsData || [];
   const setSelectedUserId = useChatStore(state => state.setSelectedUserId);
   
-  // Tính tổng số tin nhắn chưa đọc
-  const unreadMessages = useMemo(() => {
-    return conversations.reduce((total, conv) => total + (conv.unreadCount || 0), 0);
-  }, [conversations]);
+  // Lấy tổng số tin nhắn chưa đọc từ store (đã được sync với conversations)
+  const unreadMessages = useChatStore(state => state.totalUnreadCount);
 
   const isLecturer = user?.role === 'lecturer';
   const baseUrl = isLecturer ? '/lecturer' : '/student';
@@ -54,8 +52,8 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
   };
 
   const navItems = user?.role === UserRole.LECTURER 
-    ? ['Courses', 'Students', 'Analytics', 'Assignment']
-    : ['Courses', 'Calendar', 'Blog'];
+    ? ['Courses', 'Materials', 'Assignment', 'Chat']
+    : ['Courses', 'Calendar', 'Assignment'];
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");

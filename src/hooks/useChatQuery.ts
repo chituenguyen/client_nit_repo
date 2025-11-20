@@ -233,6 +233,15 @@ export const useConversations = () => {
         const totalUnread = conversations.reduce((sum, conv) => sum + (conv.unreadCount || 0), 0);
         setTotalUnreadCount(totalUnread);
         
+        console.log('📊 Conversations loaded:', {
+          count: conversations.length,
+          totalUnread,
+          details: conversations.map(c => ({ 
+            user: c.user.fullName, 
+            unreadCount: c.unreadCount 
+          }))
+        });
+        
         setError(null);
         return conversations;
       } catch (err) {
@@ -290,15 +299,50 @@ export const useMarkAllChatsAsRead = () => {
 
   return useMutation({
     mutationFn: (userId: string) => chatApi.markAllAsRead(userId),
-    onSuccess: (_, userId) => {
+    onSuccess: async (response, userId) => {
+      console.log('✅ Đánh dấu tất cả đã đọc thành công:', response.data);
+      
       // Cập nhật chats trong store
       markChatsAsRead(userId);
 
-      // Invalidate queries
-      queryClient.invalidateQueries({ queryKey: chatKeys.history(userId) });
-      queryClient.invalidateQueries({ queryKey: chatKeys.conversations() });
+      // Update cache trực tiếp cho conversations - set unreadCount = 0
+      queryClient.setQueryData<any>(
+        chatKeys.conversations(),
+        (oldData: any) => {
+          if (!oldData) return oldData;
+          
+          return oldData.map((conv: any) => {
+            if (conv.user.id === userId) {
+              return {
+                ...conv,
+                unreadCount: 0
+              };
+            }
+            return conv;
+          });
+        }
+      );
+
+      // Update cache trực tiếp cho messages - set isRead = true
+      queryClient.setQueryData<any>(
+        chatKeys.history(userId, { page: 1, limit: 50 }),
+        (oldData: any) => {
+          if (!oldData) return oldData;
+          
+          return oldData.map((message: any) => ({
+            ...message,
+            isRead: true
+          }));
+        }
+      );
+
+      // Refetch để đảm bảo sync với server
+      await queryClient.refetchQueries({ 
+        queryKey: chatKeys.conversations(),
+        type: 'active'
+      });
       
-      console.log('✅ Đánh dấu tất cả đã đọc thành công');
+      console.log('🔄 Đã refetch conversations sau khi đánh dấu đã đọc');
     },
     onError: (err) => {
       const error = err as AxiosError<ApiErrorResponse>;
