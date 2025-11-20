@@ -83,6 +83,11 @@ html.dark {
   .hover\:bg-primary:hover {
     background-color: var(--color-primary);
   }
+
+  .scroll-container {
+    position: relative;
+    overflow-anchor: none;
+  }
 }
 
 /* ========== 🎨 Animations ========== */

@@ -363,6 +363,42 @@ export const UserRole = {
     return UserRole.STUDENT;
   };
 
+  // ==================== LECTURE MATERIAL TYPES ====================
+
+export type MaterialType = 'PDF' | 'VIDEO' | 'SLIDE' | 'OTHER';
+
+export interface LectureMaterial {
+  id: string;
+  title: string;
+  description: string;
+  courseId: string;
+  weekNumber?: number;
+  fileUrl?: string;
+  materialType?: MaterialType;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateLectureMaterialPayload {
+  title: string;
+  description: string;
+  courseId: string;
+  weekNumber?: number;
+  materialType?: MaterialType;
+}
+
+export interface LectureMaterialsResponse {
+  success: boolean;
+  data: LectureMaterial[];
+  message?: string;
+}
+
+export interface LectureMaterialDetailResponse {
+  success: boolean;
+  data: LectureMaterial;
+  message?: string;
+}
+
  // ==================== CHAT TYPES ====================
 
 export interface ChatUser {

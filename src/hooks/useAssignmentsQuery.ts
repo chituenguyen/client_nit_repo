@@ -1,7 +1,7 @@
 // src/hooks/useAssignmentQuery.ts
 import { useQuery } from '@tanstack/react-query';
 import assignmentApi from '../api/assignmentApi';
-import { useAssignmentStore, type AssignmentStore } from '../stores/assignmentStore';
+import { useAssignmentStore } from '../stores/assignmentStore';
 import { AxiosError } from 'axios';
 
 // ==================== QUERY KEYS ====================
@@ -19,9 +19,9 @@ export const assignmentKeys = {
  * Hook để lấy danh sách assignments theo courseId
  */
 export const useAssignmentsByCourse = (courseId: string | undefined) => {
-  const setAssignments = useAssignmentStore((s: AssignmentStore) => s.setAssignments);
-  const setLoading = useAssignmentStore((s: AssignmentStore) => s.setLoading);
-  const setError = useAssignmentStore((s: AssignmentStore) => s.setError);
+  const setAssignments = useAssignmentStore((s) => s.setAssignments);
+  const setLoading = useAssignmentStore((s) => s.setLoading);
+  const setError = useAssignmentStore((s) => s.setError);
 
   return useQuery({
     queryKey: assignmentKeys.listByCourse(courseId || ''),
@@ -71,9 +71,9 @@ export const useAssignmentsByCourse = (courseId: string | undefined) => {
  * Hook để lấy chi tiết assignment theo ID
  */
 export const useAssignmentDetail = (assignmentId: string | undefined) => {
-  const setSelectedAssignment = useAssignmentStore((s: AssignmentStore) => s.setSelectedAssignment);
-  const setLoading = useAssignmentStore((s: AssignmentStore) => s.setLoading);
-  const setError = useAssignmentStore((s: AssignmentStore) => s.setError);
+  const setSelectedAssignment = useAssignmentStore((s) => s.setSelectedAssignment);
+  const setLoading = useAssignmentStore((s) => s.setLoading);
+  const setError = useAssignmentStore((s) => s.setError);
 
   return useQuery({
     queryKey: assignmentKeys.detail(assignmentId || ''),

@@ -1,7 +1,7 @@
 // src/hooks/useAssignmentQuery.ts
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo } from 'react';
-import { type Submission } from '../api/assignmentApi';
+import { type Submission } from '../types';
 import assignmentApi from '../api/assignmentApi';
 import { useAssignmentStore } from '../stores/assignmentStore';
 import { AxiosError } from 'axios';

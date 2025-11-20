@@ -14,6 +14,7 @@ import CoursePage from '../pages/Student/StudentCoursePage';
 import CourseDetail from '../pages/Student/StudentCourseDetail';
 import CalendarPage from '../pages/Student/StudentCalendarPage';
 import AssignmentPage from '../pages/Student/StudentAssignmentPage';
+import MaterialPage from '../pages/Student/StudentMatertialPage';
 import BlogPage from '../pages/Student/StudentBlogPage';
 
 // Import các pages cho Lecturer
@@ -60,6 +61,7 @@ const router = createBrowserRouter([
       { path: 'courses', element: <CoursePage /> },
       { path: 'courses/:id', element: <CourseDetail /> },
       { path: 'courses/:id/assignments', element: <AssignmentPage /> },
+      { path: 'courses/:id/materials', element: <MaterialPage/>},
       { path: 'calendar', element: <CalendarPage /> },
       { path: 'blog', element: <BlogPage /> },
       { path: 'chat', element: <ChatPage /> },

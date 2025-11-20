@@ -8,10 +8,10 @@ import { useCourseDetail, useEnrollCourse, useUnenrollCourse, useMyEnrollments }
 import { useAuthStore } from '../../stores/authStore';
 import { useCourseStore } from '../../stores/courseStore';
 import type { Schedule } from '../../types';
-import toast from 'react-hot-toast';
 import UnenrollModal from '../../components/UnenrollModal';
 import { IoArrowForwardOutline } from "react-icons/io5";
 import { AxiosError } from 'axios';
+import toast from 'react-hot-toast';
 
 interface UnenrollInfo {
   enrollmentId: string;
@@ -186,7 +186,7 @@ export default function CourseDetailPage() {
             <article>
               <h4 className="text-sm font-semibold text-main">Giảng viên</h4>
               <p className="text-sm text-secondary">
-                {course.lecturer.user?.fullName} – {course.lecturer.title}
+                {course.lecturer.user?.fullName} — {course.lecturer.title}
               </p>
               {course.lecturer.department && <p className="text-xs text-secondary">{course.lecturer.department}</p>}
             </article>
@@ -241,8 +241,10 @@ export default function CourseDetailPage() {
           </button>
         </div>
 
-        {/* Lessons */}  
-        <div className="bg-background rounded-lg overflow-hidden shadow-md hover:shadow-lg flex items-center justify-between cursor-pointer transition-all group">
+        {/* Lectures - ĐÃ CẬP NHẬT */}  
+        <div 
+          className="bg-background rounded-lg overflow-hidden shadow-md hover:shadow-lg flex items-center justify-between cursor-pointer transition-all group"
+        >
           <div className='p-4 flex items-center'>
             <div className="p-2 bg-primary text-primary rounded-lg mr-3 flex items-center justify-center group-hover:scale-110 transition-transform">
               <MdPlayLesson className="w-6 h-6" />
@@ -253,7 +255,8 @@ export default function CourseDetailPage() {
             </article>
           </div>
           <button 
-            type='button' 
+            type='button'
+            onClick={() => navigate(`/student/courses/${course.id}/materials`)}
             className='bg-primary text-primary h-full flex items-center justify-center px-4 scale-x-0 origin-right group-hover:scale-x-100 transition-transform'
           >
             <IoArrowForwardOutline className='w-5 h-5'/>
@@ -331,7 +334,7 @@ export default function CourseDetailPage() {
                             {s.startDate
                               ? new Date(s.startDate).toLocaleDateString()
                               : '-'}{' '}
-                            –{' '}
+                            —{' '}
                             {s.endDate ? new Date(s.endDate).toLocaleDateString() : '-'}
                           </td>
                           <td className="hidden lg:table-cell px-3 py-4 text-center whitespace-nowrap text-main">
