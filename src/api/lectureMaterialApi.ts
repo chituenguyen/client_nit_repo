@@ -78,7 +78,11 @@ export const lectureMaterialApi = {
     console.log('  - weekNumber: string -> number');
     console.log('  - isPublic: string -> boolean\n');
 
-    return api.post('/lecture-materials', formData);
+    return api.post('/lecture-materials', formData, {
+      timeout: 60_000, // Upload có thể lâu hơn 15s mặc định
+      maxContentLength: Infinity,
+      maxBodyLength: Infinity,
+    });
   },
 
   /**
@@ -171,8 +175,15 @@ export const lectureMaterialApi = {
       queryParams.limit = params.limit;
     }
 
-    if (typeof params?.weekNumber === 'number') {
-      queryParams.weekNumber = params.weekNumber;
+    const weekParam =
+      typeof params?.week === 'number'
+        ? params.week
+        : typeof params?.weekNumber === 'number'
+        ? params.weekNumber
+        : undefined;
+
+    if (typeof weekParam === 'number') {
+      queryParams.week = weekParam;
     }
 
     return api.get(`/lecture-materials/course/${courseId}`, { params: queryParams });
@@ -214,8 +225,15 @@ export const lectureMaterialApi = {
       queryParams.limit = params.limit;
     }
 
-    if (typeof params?.weekNumber === 'number') {
-      queryParams.weekNumber = params.weekNumber;
+    const weekParam =
+      typeof params?.week === 'number'
+        ? params.week
+        : typeof params?.weekNumber === 'number'
+        ? params.weekNumber
+        : undefined;
+
+    if (typeof weekParam === 'number') {
+      queryParams.week = weekParam;
     }
 
     return api.get('/lecture-materials/my-materials', { params: queryParams });

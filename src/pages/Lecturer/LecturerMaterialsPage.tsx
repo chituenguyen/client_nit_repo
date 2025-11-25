@@ -1,5 +1,5 @@
 // src/pages/Lecturer/LecturerMaterialsPage.tsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuthStore } from '../../stores/authStore';
 import { useCourses } from '../../hooks/useCourseQuery';
 import {
@@ -44,9 +44,26 @@ export default function LecturerMaterialsPage() {
 
   const { data: materialsData, isLoading: loadingMaterials } = useMaterialsByCourse(
     selectedCourseId,
-    { search: searchTerm, weekNumber: selectedWeek }
+    { search: searchTerm, week: selectedWeek }
   );
   const materials = materialsData || [];
+
+  const filteredMaterials = useMemo(() => {
+    if (!materials.length) return [];
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+
+    return materials.filter((material) => {
+      const matchesWeek =
+        typeof selectedWeek === 'number' ? material.weekNumber === selectedWeek : true;
+
+      if (!normalizedSearch) {
+        return matchesWeek;
+      }
+
+      const haystack = `${material.title} ${material.description ?? ''}`.toLowerCase();
+      return matchesWeek && haystack.includes(normalizedSearch);
+    });
+  }, [materials, searchTerm, selectedWeek]);
 
   const createMutation = useCreateMaterial();
   const updateMutation = useUpdateMaterial();
@@ -294,9 +311,17 @@ export default function LecturerMaterialsPage() {
           <p className="text-secondary text-lg mb-2">Chưa có tài liệu nào</p>
           <p className="text-secondary text-sm">Hãy upload tài liệu đầu tiên cho khóa học này</p>
         </div>
+      ) : filteredMaterials.length === 0 ? (
+        <div className="bg-surface rounded-xl shadow-md p-12 text-center">
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <p className="text-secondary text-lg mb-2">Không tìm thấy tài liệu phù hợp</p>
+          <p className="text-secondary text-sm">Thử lại với từ khóa khác hoặc bỏ lọc tuần</p>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {materials.map((material: LectureMaterial) => (
+          {filteredMaterials.map((material: LectureMaterial) => (
             <div
               key={material.id}
               className="bg-surface rounded-xl shadow-md hover:shadow-lg transition-shadow p-4"

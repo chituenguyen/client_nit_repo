@@ -1,11 +1,12 @@
 // src/hooks/useLectureMaterialQuery.ts
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, QueryClient } from '@tanstack/react-query';
 import lectureMaterialApi from '../api/lectureMaterialApi';
 import { useLectureMaterialStore } from '../stores/lectureMaterialStore';
 import type {
   CreateLectureMaterialData,
   UpdateLectureMaterialData,
   LectureMaterialsParams,
+  LectureMaterial,
 } from '../types';
 import { AxiosError } from 'axios';
 
@@ -28,6 +29,74 @@ export const lectureMaterialKeys = {
   detail: (id: string) => [...lectureMaterialKeys.all, 'detail', id] as const,
 };
 
+// ==================== HELPERS ====================
+const extractMaterials = (response: unknown): LectureMaterial[] => {
+  const payload = (response as any)?.data ?? response;
+
+  const candidates = [
+    payload?.data?.items,
+    payload?.data?.data,
+    payload?.data?.rows,
+    payload?.data,
+    payload?.items,
+    payload?.rows,
+    payload,
+  ];
+
+  for (const candidate of candidates) {
+    if (Array.isArray(candidate)) {
+      return candidate as LectureMaterial[];
+    }
+  }
+
+  return [];
+};
+
+const matchesCourseQueryKey = (key: unknown, courseId: string) =>
+  Array.isArray(key) &&
+  key[0] === 'lecture-materials' &&
+  key[1] === 'course' &&
+  key[2] === courseId;
+
+const shouldIncludeMaterial = (
+  material: LectureMaterial,
+  params?: Omit<LectureMaterialsParams, 'courseId'>
+) => {
+  if (!params) return true;
+
+  if (typeof params.week === 'number' && material.weekNumber !== params.week) {
+    return false;
+  }
+  if (typeof params.weekNumber === 'number' && material.weekNumber !== params.weekNumber) {
+    return false;
+  }
+  if (params.search && params.search.trim() !== '') {
+    const term = params.search.trim().toLowerCase();
+    const haystack = `${material.title} ${material.description ?? ''}`.toLowerCase();
+    return haystack.includes(term);
+  }
+  return true;
+};
+
+const updateCourseQueriesCache = (
+  queryClient: QueryClient,
+  courseId: string,
+  updater: (oldData: LectureMaterial[] | undefined, params?: Omit<LectureMaterialsParams, 'courseId'>) =>
+    LectureMaterial[] | undefined
+) => {
+  if (!courseId) return;
+
+  const queries = queryClient.getQueryCache().findAll({
+    predicate: (query) => matchesCourseQueryKey(query.queryKey, courseId),
+  });
+
+  queries.forEach((query) => {
+    const key = query.queryKey as unknown[];
+    const params = (key?.[3] as Omit<LectureMaterialsParams, 'courseId'>) || undefined;
+    queryClient.setQueryData<LectureMaterial[] | undefined>(key, (oldData) => updater(oldData, params));
+  });
+};
+
 // ==================== HOOKS ====================
 
 /**
@@ -48,13 +117,7 @@ export const useMaterialsByCourse = (
         setLoading(true);
         const response = await lectureMaterialApi.getMaterialsByCourse(courseId, params);
         
-        // Parse response
-        const responseData: any = response.data;
-        const materials = Array.isArray(responseData?.data?.items)
-          ? responseData.data.items
-          : Array.isArray(responseData?.data)
-          ? responseData.data
-          : [];
+        const materials = extractMaterials(response);
 
         console.log('✅ Fetched materials for course:', courseId, materials);
         
@@ -100,13 +163,7 @@ export const useMyMaterials = (params?: LectureMaterialsParams) => {
         setLoading(true);
         const response = await lectureMaterialApi.getMyMaterials(params);
         
-        // Parse response
-        const responseData: any = response.data;
-        const materials = Array.isArray(responseData?.data?.items)
-          ? responseData.data.items
-          : Array.isArray(responseData?.data)
-          ? responseData.data
-          : [];
+        const materials = extractMaterials(response);
 
         console.log('✅ Fetched my materials:', materials);
         
@@ -203,20 +260,42 @@ export const useCreateMaterial = () => {
       
       if (material) {
         addMaterial(material);
+
+        updateCourseQueriesCache(queryClient, variables.courseId, (oldData = [], params) => {
+          if (!shouldIncludeMaterial(material, params)) {
+            return oldData;
+          }
+          if (oldData.some((item) => item.id === material.id)) {
+            return oldData;
+          }
+          return [material, ...oldData];
+        });
       }
       
-      // Invalidate các queries liên quan
-      queryClient.invalidateQueries({ 
-        queryKey: lectureMaterialKeys.byCourse(variables.courseId) 
+      // Invalidate tất cả queries của course này bất kể filters
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const key = query.queryKey;
+          return (
+            Array.isArray(key) &&
+            key[0] === 'lecture-materials' &&
+            key[1] === 'course' &&
+            key[2] === variables.courseId
+          );
+        },
       });
-      queryClient.invalidateQueries({ 
-        queryKey: lectureMaterialKeys.lists() 
+      queryClient.invalidateQueries({
+        queryKey: lectureMaterialKeys.lists(),
       });
     },
     onError: (err) => {
       const error = err as AxiosError<ApiErrorResponse>;
       const errorData = error.response?.data;
-      const errorMessage = errorData?.message || 'Không thể tạo tài liệu';
+      let errorMessage = errorData?.message || 'Không thể tạo tài liệu';
+
+      if (error.code === 'ECONNABORTED') {
+        errorMessage = 'Upload mất quá nhiều thời gian. Vui lòng thử lại với file nhỏ hơn hoặc kiểm tra kết nối.';
+      }
       
       console.error('❌ Lỗi khi tạo material:');
       console.error('Status:', error.response?.status);
@@ -294,7 +373,7 @@ export const useDeleteMaterial = () => {
   const setError = useLectureMaterialStore((s) => s.setError);
 
   return useMutation({
-    mutationFn: ({ id, courseId }: { id: string; courseId?: string }) => {
+    mutationFn: ({ id }: { id: string; courseId?: string }) => {
       console.log('🗑️ Deleting material:', id);
       return lectureMaterialApi.deleteMaterial(id);
     },
@@ -302,6 +381,13 @@ export const useDeleteMaterial = () => {
       console.log('✅ Material deleted successfully:', variables.id);
       
       removeMaterial(variables.id);
+      
+      if (variables.courseId) {
+        updateCourseQueriesCache(queryClient, variables.courseId, (oldData) => {
+          if (!oldData) return oldData;
+          return oldData.filter((material) => material.id !== variables.id);
+        });
+      }
       
       // Invalidate các queries liên quan
       queryClient.invalidateQueries({ 

@@ -391,7 +391,8 @@ export const UserRole = {
     search?: string;
     page?: number;
     limit?: number;
-    weekNumber?: number;
+    weekNumber?: number; // legacy field
+    week?: number;       // backend expects `week`
   }
   
   export interface LectureMaterialsResponse {
