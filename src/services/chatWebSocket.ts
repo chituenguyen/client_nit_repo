@@ -77,17 +77,16 @@ export class ChatWebSocketService {
           this.socket = null;
         }
 
-        // Clean URL: Remove protocol
-        const wsUrl = `${config.url}/chat`;
-        const cleanUrl = wsUrl.replace(/^(https?|wss?):\/\//, '');
+        // Backend URL with /chat namespace
+        const baseUrl = config.url;
+        const namespace = '/chat';
         
-        console.log('🔌 Connecting to:', cleanUrl);
+        console.log('🔌 Connecting to:', baseUrl + namespace);
         console.log('🔑 Token:', config.token.substring(0, 20) + '...');
 
-        // Create socket
-        this.socket = io(cleanUrl, {
+        // Create socket with namespace
+        this.socket = io(`${baseUrl}${namespace}`, {
           query: { token: config.token },
-          auth: { token: config.token },
           transports: ['websocket', 'polling'],
           reconnection: true,
           reconnectionAttempts: this.maxReconnectAttempts,
@@ -339,7 +338,10 @@ export const initChatWebSocket = async (token: string): Promise<ChatWebSocketSer
     return ws;
   }
 
-  const wsUrl = import.meta.env.VITE_WS_URL || 'http://localhost:2910';
+  // Use API base URL (same as REST API)
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
+  // Extract base URL without /api/v1
+  const wsUrl = apiBaseUrl.replace(/\/api\/v1$/, '') || 'http://localhost:3000';
   console.log('🔗 Initializing WebSocket:', wsUrl);
 
   try {

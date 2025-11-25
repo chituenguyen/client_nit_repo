@@ -78,10 +78,12 @@ export const useChatHistory = (params: ChatHistoryParams) => {
       }
     },
     enabled: !!params.userId,
-    staleTime: 30 * 1000, // 30 giây
+    staleTime: 0, // 0 để luôn refetch khi invalidate
     gcTime: 5 * 60 * 1000, // 5 phút
-    retry: 2,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    retry: 1, // Giảm retry để nhanh hơn
+    refetchOnMount: 'always', // Luôn refetch khi mount
+    refetchOnWindowFocus: true, // Refetch khi focus window
+    refetchInterval: false, // Không auto refetch (dùng WebSocket)
   });
 };
 
@@ -149,25 +151,56 @@ export const useSendChat = () => {
 
   return useMutation({
     mutationFn: (payload: SendChatPayload) => chatApi.sendChat(payload),
+    onMutate: async (variables) => {
+      // Optimistic update: Cancel outgoing refetches
+      await queryClient.cancelQueries({ 
+        queryKey: chatKeys.history(variables.receiverId) 
+      });
+
+      // Snapshot previous value
+      const previousChats = queryClient.getQueryData(
+        chatKeys.history(variables.receiverId, { page: 1, limit: 50 })
+      );
+
+      // Return context for rollback
+      return { previousChats };
+    },
     onSuccess: (response, variables) => {
       const newChat = response.data?.data;
       
       if (newChat) {
-        // Thêm chat vào store
+        // Update cache directly (faster than invalidate)
+        queryClient.setQueryData<any[]>(
+          chatKeys.history(variables.receiverId, { page: 1, limit: 50 }),
+          (oldData) => {
+            if (!oldData) return [newChat];
+            // Replace temporary message with real one
+            return oldData.map(chat => 
+              chat.id.toString().startsWith('temp-') ? newChat : chat
+            );
+          }
+        );
+        
         addChat(newChat);
       }
 
-      // Invalidate queries để refetch
+      // Only invalidate conversations (for last message update)
       queryClient.invalidateQueries({ 
-        queryKey: chatKeys.history(variables.receiverId) 
-      });
-      queryClient.invalidateQueries({ 
-        queryKey: chatKeys.conversations() 
+        queryKey: chatKeys.conversations(),
+        refetchType: 'active'
       });
       
       console.log('✅ Gửi tin nhắn thành công:', response.data);
     },
-    onError: (err) => {
+    onError: (err, variables, context) => {
+      // Rollback on error
+      if (context?.previousChats) {
+        queryClient.setQueryData(
+          chatKeys.history(variables.receiverId, { page: 1, limit: 50 }),
+          context.previousChats
+        );
+      }
+      
       const error = err as AxiosError<ApiErrorResponse>;
       const errorMessage = error.response?.data?.message || 'Không thể gửi tin nhắn';
       
@@ -199,6 +232,15 @@ export const useConversations = () => {
         // Tính tổng số tin nhắn chưa đọc
         const totalUnread = conversations.reduce((sum, conv) => sum + (conv.unreadCount || 0), 0);
         setTotalUnreadCount(totalUnread);
+        
+        console.log('📊 Conversations loaded:', {
+          count: conversations.length,
+          totalUnread,
+          details: conversations.map(c => ({ 
+            user: c.user.fullName, 
+            unreadCount: c.unreadCount 
+          }))
+        });
         
         setError(null);
         return conversations;
@@ -257,15 +299,50 @@ export const useMarkAllChatsAsRead = () => {
 
   return useMutation({
     mutationFn: (userId: string) => chatApi.markAllAsRead(userId),
-    onSuccess: (_, userId) => {
+    onSuccess: async (response, userId) => {
+      console.log('✅ Đánh dấu tất cả đã đọc thành công:', response.data);
+      
       // Cập nhật chats trong store
       markChatsAsRead(userId);
 
-      // Invalidate queries
-      queryClient.invalidateQueries({ queryKey: chatKeys.history(userId) });
-      queryClient.invalidateQueries({ queryKey: chatKeys.conversations() });
+      // Update cache trực tiếp cho conversations - set unreadCount = 0
+      queryClient.setQueryData<any>(
+        chatKeys.conversations(),
+        (oldData: any) => {
+          if (!oldData) return oldData;
+          
+          return oldData.map((conv: any) => {
+            if (conv.user.id === userId) {
+              return {
+                ...conv,
+                unreadCount: 0
+              };
+            }
+            return conv;
+          });
+        }
+      );
+
+      // Update cache trực tiếp cho messages - set isRead = true
+      queryClient.setQueryData<any>(
+        chatKeys.history(userId, { page: 1, limit: 50 }),
+        (oldData: any) => {
+          if (!oldData) return oldData;
+          
+          return oldData.map((message: any) => ({
+            ...message,
+            isRead: true
+          }));
+        }
+      );
+
+      // Refetch để đảm bảo sync với server
+      await queryClient.refetchQueries({ 
+        queryKey: chatKeys.conversations(),
+        type: 'active'
+      });
       
-      console.log('✅ Đánh dấu tất cả đã đọc thành công');
+      console.log('🔄 Đã refetch conversations sau khi đánh dấu đã đọc');
     },
     onError: (err) => {
       const error = err as AxiosError<ApiErrorResponse>;

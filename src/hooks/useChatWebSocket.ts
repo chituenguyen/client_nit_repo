@@ -74,7 +74,11 @@ export const useChatWebSocket = (options: UseChatWebSocketOptions = {}) => {
       return;
     }
 
-    wsRef.current.sendMessage({ receiverId, messageContent });
+    try {
+      wsRef.current.sendMessage({ receiverId, messageContent });
+    } catch (error) {
+      console.error('❌ Failed to send message via WebSocket:', error);
+    }
   }, [isConnected]);
 
   const markAsRead = useCallback((messageId: string) => {
@@ -127,20 +131,27 @@ export const useChatWebSocket = (options: UseChatWebSocketOptions = {}) => {
     // Receive new message
     ws.onReceiveMessage((message: Chat) => {
       console.log('📩 New message received:', message);
-      const currentSelectedUserId = useChatStore.getState().selectedUserId;
       
-      if (currentSelectedUserId === message.senderId) {
-        // Nếu đang chat với người gửi này => đánh dấu đã đọc ngay
-        ws.markAsRead({ messageId: message.id });
-        
-        // Cập nhật local để UI hiển thị đúng (ẩn badge đỏ)
-        message.isRead = true;
-      }
+      // 1. Add to store immediately
       addChat(message);
-      queryClient.invalidateQueries({ queryKey: chatKeys.conversations() });
+      
+      // 2. Update cache directly for instant UI update
+      queryClient.setQueryData<Chat[]>(
+        chatKeys.history(message.senderId, { page: 1, limit: 50 }),
+        (oldData) => {
+          if (!oldData) return [message];
+          if (oldData.some(m => m.id === message.id)) return oldData;
+          return [...oldData, message];
+        }
+      );
+      
+      // 3. Invalidate conversations to update last message & unread count
       queryClient.invalidateQueries({ 
-        queryKey: chatKeys.history(message.senderId) 
+        queryKey: chatKeys.conversations(),
+        refetchType: 'active'
       });
+      
+      console.log('📨 Updated cache for incoming message from:', message.senderId);
     });
 
     // Message sent confirmation
@@ -148,10 +159,29 @@ export const useChatWebSocket = (options: UseChatWebSocketOptions = {}) => {
       console.log('✅ Message sent:', data);
       
       if (data.success && data.message) {
-        addChat(data.message);
+        const message = data.message;
+        
+        // 1. Add to Zustand store (immediate UI update)
+        addChat(message);
+        
+        // 2. Update React Query cache directly (no refetch needed)
+        queryClient.setQueryData<Chat[]>(
+          chatKeys.history(message.receiverId, { page: 1, limit: 50 }),
+          (oldData) => {
+            if (!oldData) return [message];
+            // Check if message already exists
+            if (oldData.some(m => m.id === message.id)) return oldData;
+            return [...oldData, message];
+          }
+        );
+        
+        // 3. Invalidate conversations to update last message
         queryClient.invalidateQueries({ 
-          queryKey: chatKeys.conversations() 
+          queryKey: chatKeys.conversations(),
+          refetchType: 'active'
         });
+        
+        console.log('🔄 Updated cache directly for:', message.receiverId);
       }
     });
 

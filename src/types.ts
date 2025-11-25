@@ -349,6 +349,64 @@ export const UserRole = {
     };
   }
   
+  // ==================== LECTURE MATERIAL TYPES ====================
+  
+  export interface LectureMaterial {
+    id: string;
+    title: string;
+    description?: string;
+    courseId: string;
+    lecturerId: string;
+    fileUrl: string;
+    fileType: string;
+    weekNumber?: number;
+    isPublic: boolean;
+    createdAt: string;
+    updatedAt: string;
+    course?: Course;
+    lecturer?: Lecturer;
+  }
+  
+  export interface CreateLectureMaterialData {
+    title: string;
+    description?: string;
+    courseId: string;
+    fileType: string;
+    weekNumber?: number;
+    isPublic?: boolean;
+    file: File; // File object for upload
+  }
+  
+  export interface UpdateLectureMaterialData {
+    title?: string;
+    description?: string;
+    fileType?: string;
+    weekNumber?: number;
+    isPublic?: boolean;
+    file?: File; // Optional file for update
+  }
+  
+  export interface LectureMaterialsParams {
+    courseId?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+    weekNumber?: number; // legacy field
+    week?: number;       // backend expects `week`
+  }
+  
+  export interface LectureMaterialsResponse {
+    success: boolean;
+    data: LectureMaterial[] | { items: LectureMaterial[]; total: number; page: number; limit: number };
+    message?: string;
+  }
+  
+  export interface LectureMaterialDetailResponse {
+    success: boolean;
+    data: LectureMaterial;
+    message?: string;
+  }
+  
   // Normalize role từ API
   export const normalizeRole = (apiRole: string | number | null | undefined): UserRole => {
     if (
@@ -363,43 +421,8 @@ export const UserRole = {
     return UserRole.STUDENT;
   };
 
-  // ==================== LECTURE MATERIAL TYPES ====================
 
-export type MaterialType = 'PDF' | 'VIDEO' | 'SLIDE' | 'OTHER';
-
-export interface LectureMaterial {
-  id: string;
-  title: string;
-  description: string;
-  courseId: string;
-  weekNumber?: number;
-  fileUrl?: string;
-  materialType?: MaterialType;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface CreateLectureMaterialPayload {
-  title: string;
-  description: string;
-  courseId: string;
-  weekNumber?: number;
-  materialType?: MaterialType;
-}
-
-export interface LectureMaterialsResponse {
-  success: boolean;
-  data: LectureMaterial[];
-  message?: string;
-}
-
-export interface LectureMaterialDetailResponse {
-  success: boolean;
-  data: LectureMaterial;
-  message?: string;
-}
-
- // ==================== CHAT TYPES ====================
+  // ==================== CHAT TYPES ====================
 
 export interface ChatUser {
   id: string;
