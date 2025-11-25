@@ -1,4 +1,4 @@
-// src/pages/ChatPage.tsx
+// src/pages/ChatPage.tsx - ENHANCED VERSION
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { AiOutlineLoading3Quarters } from 'react-icons/ai';
 import { BiErrorCircle, BiSearch, BiSend } from 'react-icons/bi';
@@ -16,8 +16,7 @@ import type { Chat } from '../types';
 export default function ChatPage() {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
-  // Kết nối WebSocket khi vào trang
-  const { isConnected } = useChatWebSocket({
+  const wsContext = useChatWebSocket({
     autoConnect: true,
     onConnect: () => console.log('✅ Chat WebSocket connected'),
     onDisconnect: () => console.log('🔌 Chat WebSocket disconnected'),
@@ -37,23 +36,30 @@ export default function ChatPage() {
         <ConversationsList 
           selectedUserId={selectedUserId}
           onSelectUser={handleSelectUser}
-          isWsConnected={isConnected}
+          isWsConnected={wsContext.isConnected}
         />
       </aside>
 
-      {/* Main Chat Area - Desktop */}
       <main className="hidden lg:flex lg:flex-1 flex-col">
         {selectedUserId ? (
-          <ChatWindow userId={selectedUserId} onClose={handleCloseChat} />
+          <ChatWindow 
+            userId={selectedUserId} 
+            onClose={handleCloseChat}
+            wsContext={wsContext} 
+          />
         ) : (
-          <EmptyChatState isConnected={isConnected} />
+          <EmptyChatState isConnected={wsContext.isConnected} />
         )}
       </main>
 
-      {/* Chat Window Overlay - Mobile */}
       {selectedUserId && (
         <div className="lg:hidden fixed inset-0 z-50 bg-background">
-          <ChatWindow userId={selectedUserId} onClose={handleCloseChat} isMobile />
+          <ChatWindow 
+            userId={selectedUserId} 
+            onClose={handleCloseChat} 
+            isMobile 
+            wsContext={wsContext}
+          />
         </div>
       )}
     </section>
@@ -120,7 +126,6 @@ function ConversationsList({ selectedUserId, onSelectUser, isWsConnected }: Conv
 
   return (
     <div className="h-full rounded-lg flex flex-col overflow-hidden gap-5">
-      {/* Header */}
       <div>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-xl font-bold text-main">
@@ -131,7 +136,6 @@ function ConversationsList({ selectedUserId, onSelectUser, isWsConnected }: Conv
               </span>
             )}
           </h2>
-          {/* WebSocket Status Indicator */}
           <div className="flex items-center gap-2">
             <div className={`w-2 h-2 rounded-full ${isWsConnected ? 'bg-green-500' : 'bg-gray-400'}`} />
             <span className="text-xs text-secondary">
@@ -140,7 +144,6 @@ function ConversationsList({ selectedUserId, onSelectUser, isWsConnected }: Conv
           </div>
         </div>
 
-        {/* Search */}
         <div className="relative">
           <BiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary text-lg" />
           <input
@@ -153,7 +156,6 @@ function ConversationsList({ selectedUserId, onSelectUser, isWsConnected }: Conv
         </div>
       </div>
 
-      {/* Conversations */}
       <div className="flex-1 overflow-y-auto">
         {filteredConversations.length === 0 ? (
           <div className="text-center py-12 px-4">
@@ -182,7 +184,6 @@ function ConversationsList({ selectedUserId, onSelectUser, isWsConnected }: Conv
                     ${selectedUserId === conv.user.id ? 'bg-component' : ''}
                   `}
                 >
-                  {/* Avatar with Online Indicator */}
                   <div className="relative flex-shrink-0">
                     <img
                       src={conv.user.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(conv.user.fullName)}&background=random`}
@@ -202,7 +203,6 @@ function ConversationsList({ selectedUserId, onSelectUser, isWsConnected }: Conv
                     )}
                   </div>
 
-                  {/* Content */}
                   <div className="flex-1 min-w-0 text-left">
                     <div className="flex items-start justify-between">
                       <h3 className={`font-semibold truncate ${conv.unreadCount > 0 ? 'text-main' : 'text-main'}`}>
@@ -235,88 +235,155 @@ interface ChatWindowProps {
   userId: string;
   onClose: () => void;
   isMobile?: boolean;
+  wsContext: ReturnType<typeof useChatWebSocket>;
 }
 
-function ChatWindow({ userId, onClose, isMobile = false }: ChatWindowProps) {
+function ChatWindow({ userId, onClose, isMobile = false, wsContext }: ChatWindowProps) {
   const [message, setMessage] = useState('');
   const messageContainerRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<number | null>(null); 
   const currentUser = useAuthStore(s => s.user);
   
-  // Lấy dữ liệu từ Store
   const rawChats = useChatStore(s => s.chats);
   
-  // Fetch dữ liệu background
   const { isLoading, error, refetch } = useChatHistory({
     userId,
     page: 1,
     limit: 100,
   });
 
-  // 👇👇👇 SỬA Ở ĐÂY: Sort theo thời gian (Cũ -> Mới) 👇👇👇
-  const displayChats = useMemo(() => {
+  // Sort và nhóm tin nhắn
+  const groupedChats = useMemo(() => {
     if (!rawChats) return [];
     
-    // Sort theo sentAt: Cũ nhất (timestamp nhỏ) -> Mới nhất (timestamp lớn)
-    return [...rawChats].sort((a, b) => {
+    const sorted = [...rawChats].sort((a, b) => {
       const dateA = new Date(a.sentAt).getTime();
       const dateB = new Date(b.sentAt).getTime();
       return dateA - dateB;
     });
-  }, [rawChats]);
-  // 👆👆👆 KẾT THÚC SỬA 👆👆👆
+
+    const groups: GroupedMessage[] = [];
+    let currentGroup: GroupedMessage | null = null;
+    let currentDateGroup: string | null = null;
+
+    sorted.forEach((chat, index) => {
+      const chatDate = new Date(chat.sentAt);
+      const dateKey = formatDateSeparator(chatDate);
+      
+      // Kiểm tra nếu cần tạo date separator mới
+      if (dateKey !== currentDateGroup) {
+        currentDateGroup = dateKey;
+        groups.push({
+          type: 'date-separator',
+          date: chatDate,
+          dateLabel: dateKey,
+        });
+        currentGroup = null;
+      }
+
+      const isOwn = chat.senderId === currentUser?.id;
+      const prevChat = index > 0 ? sorted[index - 1] : null;
+      const timeDiff = prevChat 
+        ? (chatDate.getTime() - new Date(prevChat.sentAt).getTime()) / 60000 
+        : 31;
+
+      // Kiểm tra nếu cần tạo nhóm mới
+      const shouldCreateNewGroup = 
+        !currentGroup ||
+        currentGroup.type === 'date-separator' ||
+        currentGroup.isOwn !== isOwn ||
+        timeDiff >= 30;
+
+      if (shouldCreateNewGroup) {
+        currentGroup = {
+          type: 'message-group',
+          isOwn,
+          sender: chat.sender,
+          messages: [chat],
+          showTime: timeDiff >= 30,
+          timestamp: chatDate,
+        };
+        groups.push(currentGroup);
+      } else {
+        currentGroup.messages.push(chat);
+      }
+    });
+
+    return groups;
+  }, [rawChats, currentUser?.id]);
 
   const otherUser = useChatStore(s => s.otherUser);
   const markAllAsRead = useMarkAllChatsAsRead();
   
-  // WebSocket hooks
-  const { sendMessage: wsSendMessage, sendTyping, markAsRead } = useChatWebSocket();
+  const { sendMessage: wsSendMessage, sendTyping, markAsRead, isConnected } = wsContext;
   const isTyping = useTypingIndicator(userId);
   const isOnlineStatus = useOnlineStatus(userId);
   const isOnline = typeof isOnlineStatus === 'boolean' ? isOnlineStatus : false;
 
-  // Tự động cuộn xuống dưới cùng khi có tin nhắn mới hoặc mới load
+  // Tìm tin nhắn cuối cùng của mỗi người để hiển thị trạng thái
+  const lastMessageByUser = useMemo(() => {
+    if (!rawChats || rawChats.length === 0) return null;
+    
+    const sorted = [...rawChats].sort((a, b) => 
+      new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime()
+    );
+    
+    const myLastMsg = sorted.find(m => m.senderId === currentUser?.id);
+    const otherLastReadMsg = sorted.find(m => m.senderId !== currentUser?.id && m.isRead);
+    
+    return { myLastMsg, otherLastReadMsg };
+  }, [rawChats, currentUser?.id]);
+
   useEffect(() => {
-    if (displayChats.length > 0) {
+    if (groupedChats.length > 0) {
       messageContainerRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [displayChats]); 
+  }, [groupedChats]); 
 
-  // Mark all as read when entering chat
   useEffect(() => {
     if (userId) {
       markAllAsRead.mutate(userId);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
   const handleTyping = (value: string) => {
     setMessage(value);
-    sendTyping(userId, true);
+    
+    if (isConnected) {
+      sendTyping(userId, true);
 
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+
+      typingTimeoutRef.current = setTimeout(() => {
+        sendTyping(userId, false);
+      }, 2000);
     }
-
-    typingTimeoutRef.current = setTimeout(() => {
-      sendTyping(userId, false);
-    }, 2000);
   };
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim()) return;
 
+    if (!isConnected) {
+      console.error('❌ Cannot send: WebSocket not connected');
+      alert('Cannot send message: Not connected to chat server');
+      return;
+    }
+
     wsSendMessage(userId, message.trim());
     
-    sendTyping(userId, false);
+    if (isConnected) {
+      sendTyping(userId, false);
+    }
+    
     if (typingTimeoutRef.current) {
       window.clearTimeout(typingTimeoutRef.current);
     }
 
     setMessage('');
     
-    // Force scroll xuống sau khi gửi
     setTimeout(() => {
       messageContainerRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, 100);
@@ -358,8 +425,16 @@ function ChatWindow({ userId, onClose, isMobile = false }: ChatWindowProps) {
     <div className={`h-full bg-background rounded-lg shadow-md flex flex-col overflow-hidden ${isMobile ? 'rounded-none' : ''}`}>
       <ChatHeader user={otherUser} isOnline={isOnline} onClose={isMobile ? onClose : undefined} />
 
-      <div className="messageContainer flex-1 overflow-y-auto p-4 space-y-4 overscroll-contain">
-        {displayChats.length === 0 ? (
+      {!isConnected && (
+        <div className="px-4 py-2 bg-yellow-500/10 border-b border-yellow-500/20 text-center">
+          <p className="text-sm text-yellow-600 dark:text-yellow-400">
+            ⚠️ Not connected to chat server. Reconnecting...
+          </p>
+        </div>
+      )}
+
+      <div className="messageContainer flex-1 overflow-y-auto p-4 space-y-3 overscroll-contain">
+        {groupedChats.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-5xl mb-3">👋</div>
             <h3 className="text-lg font-semibold text-main mb-2">
@@ -371,15 +446,37 @@ function ChatWindow({ userId, onClose, isMobile = false }: ChatWindowProps) {
           </div>
         ) : (
           <>
-            {displayChats.map((chat) => (
-              <MessageBubble
-                key={chat.id}
-                chat={chat}
-                isOwn={chat.senderId === currentUser?.id}
-                onMarkAsRead={markAsRead}
-              />
-            ))}
-            {/* Thẻ div rỗng này dùng để scroll xuống đáy */}
+            {groupedChats.map((group, groupIndex) => {
+              if (group.type === 'date-separator') {
+                return null; // Bỏ date separator
+              }
+
+              const isLastGroup = groupIndex === groupedChats.length - 1;
+              const showReadReceipt = 
+                group.isOwn && 
+                isLastGroup && 
+                lastMessageByUser?.myLastMsg?.id === group.messages[group.messages.length - 1].id;
+
+              return (
+                <div key={`group-${groupIndex}`} className="space-y-3">
+                  {group.showTime && (
+                    <div className="flex justify-center">
+                      <p className="text-xs text-secondary px-3 py-1 bg-component rounded-full">
+                        {formatDetailedTime(group.timestamp)}
+                      </p>
+                    </div>
+                  )}
+                  
+                  <MessageGroup
+                    group={group}
+                    onMarkAsRead={markAsRead}
+                    showReadReceipt={showReadReceipt}
+                    otherUserAvatar={otherUser?.avatarUrl}
+                    lastReadMessage={lastMessageByUser?.otherLastReadMsg}
+                  />
+                </div>
+              );
+            })}
             <div ref={messageContainerRef} />
           </>
         )}
@@ -408,18 +505,97 @@ function ChatWindow({ userId, onClose, isMobile = false }: ChatWindowProps) {
             type="text"
             value={message}
             onChange={(e) => handleTyping(e.target.value)}
-            placeholder="Type a message..."
-            className="flex-1 px-4 py-2.5 bg-surface border border-color rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-main placeholder:text-secondary"
+            placeholder={isConnected ? "Type a message..." : "Connecting..."}
+            disabled={!isConnected}
+            className="flex-1 px-4 py-2.5 bg-surface border border-color rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-main placeholder:text-secondary disabled:opacity-50 disabled:cursor-not-allowed"
           />
           <button
             type="submit"
-            disabled={!message.trim()}
+            disabled={!message.trim() || !isConnected}
             className="px-6 py-2.5 bg-primary text-primary rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             <BiSend className="text-lg" />
             <span className="hidden sm:inline">Send</span>
           </button>
         </form>
+      </div>
+    </div>
+  );
+}
+
+/* === Types === */
+interface GroupedMessage {
+  type: 'date-separator' | 'message-group';
+  date?: Date;
+  dateLabel?: string;
+  isOwn?: boolean;
+  sender?: Chat['sender'];
+  messages?: Chat[];
+  showTime?: boolean;
+  timestamp?: Date;
+}
+
+/* === Message Group === */
+interface MessageGroupProps {
+  group: GroupedMessage;
+  onMarkAsRead: (messageId: string) => void;
+  showReadReceipt?: boolean;
+  otherUserAvatar?: string | null;
+  lastReadMessage?: Chat;
+}
+
+function MessageGroup({ group, onMarkAsRead, showReadReceipt, otherUserAvatar, lastReadMessage }: MessageGroupProps) {
+  if (group.type !== 'message-group' || !group.messages) return null;
+
+  // (Đã xóa dòng const currentUser vì không còn dùng ở đây nữa)
+
+  return (
+    <div className={`flex gap-2 ${group.isOwn ? 'justify-end' : 'justify-start'}`}>
+      {!group.isOwn && (
+        <img
+          src={group.sender?.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(group.sender?.fullName || '')}&background=random`}
+          alt={group.sender?.fullName}
+          className="w-8 h-8 rounded-full object-cover flex-shrink-0 self-end"
+        />
+      )}
+
+      <div className={`flex flex-col gap-1 max-w-[70%] ${group.isOwn ? 'items-end' : 'items-start'}`}>
+        {group.messages.map((chat, index) => {
+          const isLast = index === group.messages!.length - 1;
+          
+          return (
+            <div key={chat.id} className="w-full flex flex-col gap-1">
+              <MessageBubble
+                chat={chat}
+                isOwn={group.isOwn!}
+                isFirstInGroup={index === 0}
+                isLastInGroup={isLast}
+                onMarkAsRead={onMarkAsRead}
+                showTime={isLast}
+              />
+              
+              {/* Icon và trạng thái chỉ hiển thị cho tin nhắn CỦA MÌNH (để xem người kia đọc chưa) */}
+              {isLast && group.isOwn && (
+                <div className="flex items-center gap-1 px-1 justify-end">
+                  {showReadReceipt && (
+                    <>
+                      {lastReadMessage ? (
+                        <img
+                          src={otherUserAvatar || `https://ui-avatars.com/api/?name=User&background=random`}
+                          alt="read"
+                          className="w-4 h-4 rounded-full object-cover"
+                          title="Đã xem"
+                        />
+                      ) : (
+                        <span className="text-xs text-secondary">✓</span>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -478,7 +654,7 @@ function ChatHeader({ user, isOnline, onClose }: ChatHeaderProps) {
             {user.role}
           </p>
           <span className="text-xs text-secondary">
-            {isOnline ? '🟢 Active now' : '⚫ Offline'}
+            {isOnline ? 'Active now' : 'Offline'}
           </span>
         </div>
       </div>
@@ -490,13 +666,22 @@ function ChatHeader({ user, isOnline, onClose }: ChatHeaderProps) {
 interface MessageBubbleProps {
   chat: Chat;
   isOwn: boolean;
+  isFirstInGroup: boolean;
+  isLastInGroup: boolean;
   onMarkAsRead: (messageId: string) => void;
+  showTime?: boolean;
 }
 
-function MessageBubble({ chat, isOwn, onMarkAsRead }: MessageBubbleProps) {
+function MessageBubble({ 
+  chat, 
+  isOwn, 
+  isFirstInGroup, 
+  isLastInGroup, 
+  onMarkAsRead, 
+  showTime
+}: MessageBubbleProps) {
   const bubbleRef = useRef<HTMLDivElement>(null);
 
-  // Mark as read khi message vào viewport
   useEffect(() => {
     if (!isOwn && !chat.isRead && bubbleRef.current) {
       const observer = new IntersectionObserver(
@@ -514,37 +699,30 @@ function MessageBubble({ chat, isOwn, onMarkAsRead }: MessageBubbleProps) {
     }
   }, [chat.id, chat.isRead, isOwn, onMarkAsRead]);
 
-  return (
-    <div ref={bubbleRef} className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
-      <div className={`flex gap-2 max-w-[70%] items-end ${isOwn ? 'flex-row-reverse' : ''}`}>
-        {!isOwn && (
-          <img
-            src={chat.sender.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(chat.sender.fullName)}&background=random`}
-            alt={chat.sender.fullName}
-            className="w-8 h-8 rounded-full object-cover flex-shrink-0"
-          />
-        )}
+  const chatTime = new Date(chat.sentAt);
+  const timeString = `${chatTime.getHours().toString().padStart(2, '0')}:${chatTime.getMinutes().toString().padStart(2, '0')}`;
 
-        <div>
-          <div
-            className={`
-              px-4 py-2.5 rounded-2xl
-              ${isOwn 
-                ? 'bg-primary text-primary rounded-br-none' 
-                : 'bg-background text-main rounded-bl-none border border-color'
-              }
-            `}
-          >
-            <p className="text-sm break-words">{chat.messageContent}</p>
+  return (
+    <div ref={bubbleRef}>
+      <div
+        className={`
+          px-4 py-2.5 rounded-2xl relative
+          ${isOwn 
+            ? `bg-primary text-primary ${isLastInGroup ? 'rounded-br-none' : isFirstInGroup ? 'rounded-br-lg' : 'rounded-br-lg'}` 
+            : `bg-background text-main border border-color ${isLastInGroup ? 'rounded-bl-none' : isFirstInGroup ? 'rounded-bl-lg' : 'rounded-bl-lg'}`
+          }
+        `}
+      >
+        <p className="text-sm break-words">{chat.messageContent}</p>
+        
+        {/* Thời gian trong bubble tin nhắn cuối */}
+        {showTime && (
+          <div className={`flex items-center mt-1 ${isOwn ? 'justify-start' : 'justify-end'}`}>
+            <span className={`text-xs ${isOwn ? 'text-primary' : 'text-main'} opacity-70`}>
+              {timeString}
+            </span>
           </div>
-          
-          <div className={`flex items-center gap-1 mt-1 text-xs text-secondary ${isOwn ? 'justify-end' : ''}`}>
-            <span>{formatTime(chat.sentAt)}</span>
-            {isOwn && (
-              <span>{chat.isRead ? '✓✓' : '✓'}</span>
-            )}
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
@@ -589,4 +767,47 @@ function formatTime(dateString: string): string {
   if (diffDays < 7) return `${diffDays}d ago`;
   
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function formatDateSeparator(date: Date): string {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  
+  const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  
+  if (messageDate.getTime() === today.getTime()) {
+    return 'Hôm nay';
+  } else if (messageDate.getTime() === yesterday.getTime()) {
+    return 'Hôm qua';
+  } else {
+    const day = date.getDate();
+    const month = date.getMonth() + 1;
+    return `Ngày ${day} tháng ${month}`;
+  }
+}
+
+function formatDetailedTime(date: Date): string {
+  const hours = date.getHours().toString().padStart(2, '0');
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  
+  if (messageDate.getTime() === today.getTime()) {
+    return `${hours}:${minutes} hôm nay`;
+  } else {
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    if (messageDate.getTime() === yesterday.getTime()) {
+      return `${hours}:${minutes} hôm qua`;
+    } else {
+      const day = date.getDate();
+      const month = date.getMonth() + 1;
+      return `${hours}:${minutes} ngày ${day} tháng ${month}`;
+    }
+  }
 }

@@ -127,6 +127,15 @@ export const useChatWebSocket = (options: UseChatWebSocketOptions = {}) => {
     // Receive new message
     ws.onReceiveMessage((message: Chat) => {
       console.log('📩 New message received:', message);
+      const currentSelectedUserId = useChatStore.getState().selectedUserId;
+      
+      if (currentSelectedUserId === message.senderId) {
+        // Nếu đang chat với người gửi này => đánh dấu đã đọc ngay
+        ws.markAsRead({ messageId: message.id });
+        
+        // Cập nhật local để UI hiển thị đúng (ẩn badge đỏ)
+        message.isRead = true;
+      }
       addChat(message);
       queryClient.invalidateQueries({ queryKey: chatKeys.conversations() });
       queryClient.invalidateQueries({ 
